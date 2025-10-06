@@ -1,4 +1,4 @@
 database.url=jdbc:postgresql://your-host:port/your-database
 database.driver=org.postgresql.Driver
 database.user=your-username
-database.password=your-password
+database.password=your-password.
