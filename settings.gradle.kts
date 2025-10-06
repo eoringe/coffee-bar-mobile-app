@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Coffee Bar Mobile App"
 include(":app")
- 
+include(":backend")
