@@ -1,1 +1,6 @@
 /build
+# Application properties with sensitive data
+backend/src/main/resources/application.properties
+
+# Or more broadly, ignore all properties files
+*.properties
