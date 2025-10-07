@@ -1,6 +1,6 @@
-/build
-# Application properties with sensitive data
 backend/src/main/resources/application.properties
+backend/src/main/resources/firebase-service-account.json
 
-# Or more broadly, ignore all properties files
+# Or more broadly
 *.properties
+*service-account.json

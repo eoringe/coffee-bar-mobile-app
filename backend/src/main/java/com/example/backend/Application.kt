@@ -1,8 +1,15 @@
 package com.example
 
+import com.example.plugins.FirebaseUser
+import com.example.plugins.configureFirebase
+import com.example.plugins.firebase
+import com.example.plugins.verifyFirebaseToken
+import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.Database
@@ -46,13 +53,53 @@ fun Application.module() {
         println("✅ Connected to database successfully!")
     }
 
+    // Configure JSON serialization
+    install(ContentNegotiation) {
+        jackson()
+    }
+
+    // Initialize Firebase
+    configureFirebase()
+
+    // Configure Authentication
+    install(Authentication) {
+        firebase("firebase-auth") {
+            validate { token ->
+                verifyFirebaseToken(token)
+            }
+        }
+    }
+
     routing {
+        // Public routes
         get("/") {
-            call.respondText("Coffee Bar API is running!")
+            call.respond(mapOf("message" to "Coffee Bar API is running!"))
         }
 
         get("/health") {
-            call.respondText("OK")
+            call.respond(mapOf("status" to "OK"))
+        }
+
+        // Protected routes
+        authenticate("firebase-auth") {
+            get("/user/profile") {
+                val user = call.principal<FirebaseUser>()
+                call.respond(mapOf(
+                    "uid" to user?.uid,
+                    "email" to user?.email,
+                    "name" to user?.name,
+                    "picture" to user?.picture,
+                    "emailVerified" to user?.emailVerified
+                ))
+            }
+
+            get("/protected") {
+                val user = call.principal<FirebaseUser>()
+                call.respond(mapOf(
+                    "message" to "Hello ${user?.email}! This is a protected route.",
+                    "uid" to user?.uid
+                ))
+            }
         }
     }
 }
