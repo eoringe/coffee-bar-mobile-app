@@ -8,6 +8,7 @@ import io.ktor.http.*
 class AuthApi {
     private val client = ApiClient.client
     private val baseUrl = ApiClient.getBaseUrl()
+    //
 
     /**
      * Verify user with backend using Firebase token
