@@ -1,5 +1,6 @@
 package com.example
 
+import com.example.backend.controllers.getMenuItems
 import com.example.plugins.FirebaseUser
 import com.example.plugins.configureFirebase
 import com.example.plugins.firebase
@@ -42,6 +43,7 @@ fun Application.module() {
     val dbPassword = props.getProperty("database.password")
         ?: throw IllegalStateException("database.password not found in configuration")
 
+    // ✅ Connect to PostgreSQL
     Database.connect(
         url = dbUrl,
         driver = dbDriver,
@@ -53,15 +55,15 @@ fun Application.module() {
         println("✅ Connected to database successfully!")
     }
 
-    // Configure JSON serialization
+    // ✅ Configure JSON serialization
     install(ContentNegotiation) {
         jackson()
     }
 
-    // Initialize Firebase
+    // ✅ Initialize Firebase
     configureFirebase()
 
-    // Configure Authentication
+    // ✅ Configure Authentication
     install(Authentication) {
         firebase("firebase-auth") {
             validate { token ->
@@ -70,8 +72,9 @@ fun Application.module() {
         }
     }
 
+    // ✅ ROUTES
     routing {
-        // Public routes
+        // 🌍 Public routes
         get("/") {
             call.respond(mapOf("message" to "Coffee Bar API is running!"))
         }
@@ -80,25 +83,34 @@ fun Application.module() {
             call.respond(mapOf("status" to "OK"))
         }
 
-        // Protected routes
+        // ☕ Public endpoint for users to view menu
+        get("/menu-items") {
+            getMenuItems(call)
+        }
+
+        // 🔒 Protected routes
         authenticate("firebase-auth") {
             get("/user/profile") {
                 val user = call.principal<FirebaseUser>()
-                call.respond(mapOf(
-                    "uid" to user?.uid,
-                    "email" to user?.email,
-                    "name" to user?.name,
-                    "picture" to user?.picture,
-                    "emailVerified" to user?.emailVerified
-                ))
+                call.respond(
+                    mapOf(
+                        "uid" to user?.uid,
+                        "email" to user?.email,
+                        "name" to user?.name,
+                        "picture" to user?.picture,
+                        "emailVerified" to user?.emailVerified
+                    )
+                )
             }
 
             get("/protected") {
                 val user = call.principal<FirebaseUser>()
-                call.respond(mapOf(
-                    "message" to "Hello ${user?.email}! This is a protected route.",
-                    "uid" to user?.uid
-                ))
+                call.respond(
+                    mapOf(
+                        "message" to "Hello ${user?.email}! This is a protected route.",
+                        "uid" to user?.uid
+                    )
+                )
             }
         }
     }
