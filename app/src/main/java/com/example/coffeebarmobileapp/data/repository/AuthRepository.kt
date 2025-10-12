@@ -3,6 +3,7 @@ package com.example.coffeebarmobileapp.data.repository
 import com.example.coffeebarmobileapp.data.models.User
 import com.example.coffeebarmobileapp.data.remote.AuthApi
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -60,6 +61,34 @@ class AuthRepository {
     }
 
     /**
+     * Sign in with Google
+     * 1. Get credential from Google ID Token
+     * 2. Sign in to Firebase with the credential
+     * 3. Verify with backend
+     */
+    suspend fun signInWithGoogle(idToken: String): Result<User> {
+        return try {
+            // Step 1: Create a Firebase credential from the Google ID token
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+
+            // Step 2: Sign in to Firebase with the credential
+            val authResult = firebaseAuth.signInWithCredential(credential).await()
+            val firebaseUser = authResult.user
+                ?: return Result.failure(Exception("Google Sign-In failed with Firebase"))
+
+            // Step 3: Get Firebase token to send to your backend
+            val token = firebaseUser.getIdToken(false).await().token
+                ?: return Result.failure(Exception("Failed to get Firebase token after Google Sign-In"))
+
+            // Step 4: Verify with your Ktor backend
+            authApi.verifyUser(token)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+
+    /**
      * Logout user
      */
     fun logout() {
@@ -78,3 +107,4 @@ class AuthRepository {
      */
     fun getCurrentUser() = firebaseAuth.currentUser
 }
+

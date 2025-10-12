@@ -1,3 +1,8 @@
+/**
+ * The package declaration MUST match the file's directory structure.
+ * This file is at: src/main/java/com/example/plugins/FirebaseAuth.kt
+ * Therefore, the package MUST be com.example.plugins
+ */
 package com.example.plugins
 
 import com.google.auth.oauth2.GoogleCredentials
@@ -11,9 +16,7 @@ import java.io.FileInputStream
 data class FirebaseUser(
     val uid: String,
     val email: String?,
-    val name: String?,
-    val picture: String?,
-    val emailVerified: Boolean
+    val name: String?
 ) : Principal
 
 class FirebaseAuthenticationProvider internal constructor(
@@ -80,12 +83,11 @@ suspend fun ApplicationCall.verifyFirebaseToken(token: String): Principal? {
         FirebaseUser(
             uid = decodedToken.uid,
             email = decodedToken.email,
-            name = decodedToken.name,
-            picture = decodedToken.picture,
-            emailVerified = decodedToken.isEmailVerified
+            name = decodedToken.name
         )
     } catch (e: Exception) {
         application.log.error("Failed to verify Firebase token: ${e.message}")
         null
     }
 }
+

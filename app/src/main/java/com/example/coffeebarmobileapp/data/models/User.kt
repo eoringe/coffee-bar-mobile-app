@@ -6,9 +6,7 @@ import kotlinx.serialization.Serializable
 data class User(
     val uid: String,
     val email: String?,
-    val name: String?,
-    val picture: String?,
-    val emailVerified: Boolean
+    val name: String?
 )
 
 @Serializable

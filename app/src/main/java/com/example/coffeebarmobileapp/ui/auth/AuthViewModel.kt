@@ -10,8 +10,6 @@ import kotlinx.coroutines.launch
 import com.example.coffeebarmobileapp.data.remote.AuthApi
 import android.util.Log
 
-
-
 /**
  * ViewModel for authentication screens
  * Handles business logic and state management
@@ -82,6 +80,32 @@ class AuthViewModel : ViewModel() {
     }
 
     /**
+     * Handle Google Sign-In
+     */
+    fun signInWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            _state.value = AuthState(isLoading = true)
+
+            val result = repository.signInWithGoogle(idToken)
+
+            result.fold(
+                onSuccess = { user ->
+                    _state.value = AuthState(
+                        isSuccess = true,
+                        user = user
+                    )
+                },
+                onFailure = { error ->
+                    _state.value = AuthState(
+                        error = error.message ?: "Google Sign-In failed"
+                    )
+                }
+            )
+        }
+    }
+
+
+    /**
      * Logout user
      */
     fun logout() {
@@ -99,3 +123,4 @@ data class AuthState(
     val error: String? = null,
     val user: User? = null
 )
+

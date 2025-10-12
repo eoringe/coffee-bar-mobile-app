@@ -12,7 +12,20 @@
           "package_name": "com.example.coffeebarmobileapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "285872124510-q1vchep70icnt4q62s4sfudpc08lmj7t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.coffeebarmobileapp",
+            "certificate_hash": "6b6c9e31f64b8e23bc8cebd5cefd10491ce32b5c"
+          }
+        },
+        {
+          "client_id": "285872124510-c7bjb4darap8l60d2881utac2q2a0l2i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAOVUh9j7yxcH6Ig8NaGBbNEcoRwpR7R0M"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "285872124510-c7bjb4darap8l60d2881utac2q2a0l2i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "285872124510-ss6ahnkguk0k3rtlo6due3kjkb3mqu5p.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.coffeeSystem"
+              }
+            }
+          ]
         }
       }
     }

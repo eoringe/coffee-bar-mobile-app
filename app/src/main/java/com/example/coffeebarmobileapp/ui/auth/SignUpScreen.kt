@@ -1,13 +1,21 @@
 package com.example.coffeebarmobileapp.ui.auth
 
+import android.app.Activity
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import kotlinx.coroutines.launch
 
 @Composable
@@ -21,8 +29,43 @@ fun SignUpScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
-
+    val context = LocalContext.current
     val state = viewModel.state.value
+
+    // --- Google Sign-In Logic ---
+    // IMPORTANT: Replace this with your Web Client ID from google-services.json
+    val webClientId = "285872124510-c7bjb4darap8l60d2881utac2q2a0l2i.apps.googleusercontent.com"
+
+    val googleSignInOptions = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(webClientId)
+            .requestEmail()
+            .build()
+    }
+
+    val googleSignInClient = remember {
+        GoogleSignIn.getClient(context, googleSignInOptions)
+    }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val idToken = account?.idToken
+                if (idToken != null) {
+                    viewModel.signInWithGoogle(idToken)
+                } else {
+                    Log.e("SignUpScreen", "Google Sign-In failed: ID token was null.")
+                }
+            } catch (e: ApiException) {
+                Log.e("SignUpScreen", "Google Sign-In failed with ApiException", e)
+            }
+        }
+    }
+    // --- End of Google Sign-In Logic ---
 
     // Navigate on success
     LaunchedEffect(state.isSuccess) {
@@ -119,6 +162,22 @@ fun SignUpScreen(
                 Text("Sign Up")
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Google Sign-In Button
+        Button(
+            onClick = {
+                val signInIntent = googleSignInClient.signInIntent
+                googleSignInLauncher.launch(signInIntent)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isLoading,
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+        ) {
+            Text("Sign up with Google")
+        }
+
 
         Spacer(modifier = Modifier.height(16.dp))
 
