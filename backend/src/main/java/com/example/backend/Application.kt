@@ -1,6 +1,8 @@
 package com.example
 
+import com.example.backend.controllers.DarajaController
 import com.example.backend.controllers.getMenuItems
+import com.example.backend.services.DarajaService
 import com.example.plugins.FirebaseUser
 import com.example.plugins.configureFirebase
 import com.example.plugins.firebase
@@ -34,6 +36,7 @@ fun Application.module() {
 
     configFile.inputStream().use { props.load(it) }
 
+    // Database config
     val dbUrl = props.getProperty("database.url")
         ?: throw IllegalStateException("database.url not found in configuration")
     val dbDriver = props.getProperty("database.driver")
@@ -42,6 +45,19 @@ fun Application.module() {
         ?: throw IllegalStateException("database.user not found in configuration")
     val dbPassword = props.getProperty("database.password")
         ?: throw IllegalStateException("database.password not found in configuration")
+
+    // Daraja config
+    val darajaConsumerKey = props.getProperty("daraja.consumerKey")
+        ?: throw IllegalStateException("daraja.consumerKey not found in configuration")
+    val darajaConsumerSecret = props.getProperty("daraja.consumerSecret")
+        ?: throw IllegalStateException("daraja.consumerSecret not found in configuration")
+    val darajaPasskey = props.getProperty("daraja.passkey")
+        ?: throw IllegalStateException("daraja.passkey not found in configuration")
+    val darajaBusinessShortCode = props.getProperty("daraja.businessShortCode")?.toLongOrNull()
+        ?: throw IllegalStateException("daraja.businessShortCode not found or invalid in configuration")
+    val darajaCallbackUrl = props.getProperty("daraja.callbackUrl")
+        ?: throw IllegalStateException("daraja.callbackUrl not found in configuration")
+
 
     // ✅ Connect to PostgreSQL
     Database.connect(
@@ -55,9 +71,22 @@ fun Application.module() {
         println("✅ Connected to database successfully!")
     }
 
+    // ✅ Instantiate Services and Controllers
+    val darajaService = DarajaService(
+        consumerKey = darajaConsumerKey,
+        consumerSecret = darajaConsumerSecret,
+        passkey = darajaPasskey,
+        businessShortCode = darajaBusinessShortCode,
+        callbackUrl = darajaCallbackUrl
+    )
+    val darajaController = DarajaController(darajaService)
+
+
     // ✅ Configure JSON serialization
     install(ContentNegotiation) {
-        jackson()
+        jackson {
+            // Optional: configure jackson mapper
+        }
     }
 
     // ✅ Initialize Firebase
@@ -88,6 +117,16 @@ fun Application.module() {
             getMenuItems(call)
         }
 
+        // 📞 Public endpoint for Daraja to send callbacks
+        post("/daraja/callback") {
+            darajaController.handleCallback(call)
+        }
+
+        // 💳 New PUBLIC endpoint to initiate payment FOR TESTING
+        post("/payments/stk-push") {
+            darajaController.initiateStkPush(call)
+        }
+
         // 🔒 Protected routes
         authenticate("firebase-auth") {
             get("/user/profile") {
@@ -96,22 +135,11 @@ fun Application.module() {
                     mapOf(
                         "uid" to user?.uid,
                         "email" to user?.email,
-                        "name" to user?.name,
-                        "picture" to user?.picture,
-                        "emailVerified" to user?.emailVerified
-                    )
-                )
-            }
-
-            get("/protected") {
-                val user = call.principal<FirebaseUser>()
-                call.respond(
-                    mapOf(
-                        "message" to "Hello ${user?.email}! This is a protected route.",
-                        "uid" to user?.uid
+                        "name" to user?.name
                     )
                 )
             }
         }
     }
 }
+

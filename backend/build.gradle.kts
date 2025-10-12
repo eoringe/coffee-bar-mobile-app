@@ -10,12 +10,20 @@ configurations.all {
 }
 
 dependencies {
+    // Ktor Server (already correct)
     implementation("io.ktor:ktor-server-core-jvm:3.0.0")
     implementation("io.ktor:ktor-server-netty-jvm:3.0.0")
     implementation("io.ktor:ktor-server-auth-jvm:3.0.0")
     implementation("io.ktor:ktor-server-content-negotiation:3.0.0")
     implementation("io.ktor:ktor-serialization-jackson:3.0.0")
 
+    // Ktor Client (UPDATED to 3.0.0)
+    implementation("io.ktor:ktor-client-core:3.0.0")
+    implementation("io.ktor:ktor-client-cio:3.0.0")
+    implementation("io.ktor:ktor-client-content-negotiation:3.0.0")
+    implementation("io.ktor:ktor-client-logging:3.0.0")
+
+    // Other dependencies
     implementation("ch.qos.logback:logback-classic:1.5.6")
     implementation("org.postgresql:postgresql:42.7.3")
     implementation("org.jetbrains.exposed:exposed-core:0.41.1")
@@ -28,7 +36,6 @@ dependencies {
 
     testImplementation(kotlin("test"))
 }
-
 application {
     mainClass.set("com.example.ApplicationKt")
 }
