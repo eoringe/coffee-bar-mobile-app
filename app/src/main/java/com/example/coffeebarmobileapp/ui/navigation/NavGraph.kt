@@ -11,10 +11,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.coffeebarmobileapp.ui.auth.LoginScreen
 import com.example.coffeebarmobileapp.ui.auth.SignUpScreen
-import com.example.coffeebarmobileapp.ui.landing.LandingScreen
 
 sealed class Screen(val route: String) {
-    object Landing : Screen("landing")
     object Login : Screen("login")
     object SignUp : Screen("signup")
     object Home : Screen("home")
@@ -24,19 +22,8 @@ sealed class Screen(val route: String) {
 fun NavGraph(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Landing.route
+        startDestination = Screen.SignUp.route
     ) {
-        composable(Screen.Landing.route) {
-            LandingScreen(
-                onNavigateToLogin = {
-                    navController.navigate(Screen.Login.route)
-
-                },
-                onNavigateToSignUp = {
-                    navController.navigate(Screen.SignUp.route)
-                }
-            )
-        }
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
