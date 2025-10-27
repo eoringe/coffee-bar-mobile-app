@@ -4,15 +4,26 @@ import android.app.Activity
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.coffeebarmobileapp.R
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -80,10 +91,27 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .background(Color(0xFFE6D3C7))
+            .padding(0.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(400.dp)
+                .clip(RoundedCornerShape(bottomEnd = 200.dp))
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.login),
+                contentDescription = "Landing Image",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
             text = "Coffee Bar Login",
             style = MaterialTheme.typography.headlineMedium,
@@ -91,26 +119,33 @@ fun LoginScreen(
         )
 
         // Email field
-        OutlinedTextField(
+        TextField(
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth() .padding(horizontal=30.dp),
             singleLine = true,
-            enabled = !state.isLoading
+            enabled = !state.isLoading,
+            colors=TextFieldDefaults.colors(
+                unfocusedContainerColor = Color.Transparent
+
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Password field
-        OutlinedTextField(
+        TextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth() .padding(horizontal=30.dp),
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            enabled = !state.isLoading
+            enabled = !state.isLoading,
+            colors=TextFieldDefaults.colors(
+                unfocusedContainerColor = Color.Transparent
+            )
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -122,8 +157,9 @@ fun LoginScreen(
                     viewModel.login(email, password)
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !state.isLoading && email.isNotBlank() && password.isNotBlank()
+            modifier = Modifier.fillMaxWidth() .padding(horizontal=100.dp) .background(Color(0xFF3A322C),RoundedCornerShape(28.dp)),
+            enabled = !state.isLoading && email.isNotBlank() && password.isNotBlank(),
+            shape=RoundedCornerShape(28.dp)
         ) {
             if (state.isLoading) {
                 CircularProgressIndicator(
@@ -131,7 +167,12 @@ fun LoginScreen(
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
-                Text("Login")
+                Text(
+                    text = "Login",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
@@ -144,10 +185,16 @@ fun LoginScreen(
                 val signInIntent = googleSignInClient.signInIntent
                 googleSignInLauncher.launch(signInIntent)
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth() .padding(horizontal=80.dp),
             enabled = !state.isLoading
         ) {
             // You can add a Google icon here
+            Icon(
+                painter = painterResource(id = R.drawable.ic_google),
+                contentDescription = "Google Icon",
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             Text("Sign in with Google")
         }
 
@@ -159,7 +206,10 @@ fun LoginScreen(
             onClick = onNavigateToSignUp,
             enabled = !state.isLoading
         ) {
-            Text("Don't have an account? Sign Up")
+            Text(
+                text="Don't have an account? Sign Up",
+                color=Color.White
+            )
         }
 
         // Error message
@@ -183,4 +233,5 @@ fun LoginScreen(
         }
     }
 }
+
 
