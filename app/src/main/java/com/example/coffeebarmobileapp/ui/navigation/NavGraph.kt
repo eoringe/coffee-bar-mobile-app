@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.coffeebarmobileapp.ui.auth.LoginScreen
 import com.example.coffeebarmobileapp.ui.auth.SignUpScreen
+import com.example.coffeebarmobileapp.ui.home.HomeScreen
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -51,17 +52,25 @@ fun NavGraph(navController: NavHostController) {
         }
 
         composable(Screen.Home.route) {
-            HomeScreen()
+            HomeScreen(
+                onNavigateToLogin = { // <-- 1. Provide the lambda
+                    navController.navigate(Screen.Login.route) { // 2. Navigate to Login
+                        popUpTo(navController.graph.id) { // 3. Clear the entire app's back stack
+                            inclusive = true
+                        }
+                    }
+                }
+            )
         }
     }
 }
 
-@Composable
-fun HomeScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text("Welcome to Coffee Bar!")
-    }
-}
+//@Composable
+//fun HomeScreen() {
+//    Box(
+//        modifier = Modifier.fillMaxSize(),
+//        contentAlignment = Alignment.Center
+//    ) {
+//        Text("Welcome to Coffee Bar!")
+//    }
+//}

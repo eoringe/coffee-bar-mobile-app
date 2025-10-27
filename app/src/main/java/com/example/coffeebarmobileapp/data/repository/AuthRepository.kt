@@ -5,6 +5,7 @@ import com.example.coffeebarmobileapp.data.remote.AuthApi
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.auth.ktx.userProfileChangeRequest
 
 /**
  * Repository that handles authentication logic
@@ -17,7 +18,8 @@ class AuthRepository {
     /**
      * Sign up with email and password
      * 1. Create user in Firebase
-     * 2. Verify with backend
+     * 2. SET THE USER'S DISPLAY NAME  <-- THIS IS THE NEW STEP
+     * 3. Verify with backend
      */
     suspend fun signUp(email: String, password: String, name: String): Result<User> {
         return try {
@@ -26,11 +28,19 @@ class AuthRepository {
             val firebaseUser = authResult.user
                 ?: return Result.failure(Exception("Failed to create user"))
 
-            // Step 2: Get Firebase token
+            // --- STEP 2: SAVE THE USER'S NAME (THE FIX) ---
+            val profileUpdates = userProfileChangeRequest {
+                displayName = name
+            }
+            firebaseUser.updateProfile(profileUpdates).await()
+            // ------------------------------------------------
+
+            // Step 3: Get Firebase token
             val token = firebaseUser.getIdToken(false).await().token
                 ?: return Result.failure(Exception("Failed to get token"))
 
-            // Step 3: Verify with backend
+            // Step 4: Verify with backend
+            // This will now return a User object that includes the name
             authApi.verifyUser(token)
         } catch (e: Exception) {
             Result.failure(e)
