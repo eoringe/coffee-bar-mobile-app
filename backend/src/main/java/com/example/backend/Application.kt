@@ -1,8 +1,10 @@
 package com.example
 
 import com.example.backend.controllers.DarajaController
+import com.example.backend.controllers.OrderController
 import com.example.backend.controllers.getMenuItems
 import com.example.backend.services.DarajaService
+import com.example.backend.services.OrderService
 import com.example.plugins.FirebaseUser
 import com.example.plugins.configureFirebase
 import com.example.plugins.firebase
@@ -16,7 +18,12 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
+import com.example.backend.models.Categories
+import com.example.backend.models.MenuItems
+import com.example.backend.models.OrderItems
+import com.example.backend.models.Orders
 import java.io.File
 import java.util.Properties
 
@@ -69,6 +76,7 @@ fun Application.module() {
 
     transaction {
         println("✅ Connected to database successfully!")
+        SchemaUtils.createMissingTablesAndColumns(Categories, MenuItems, Orders, OrderItems)
     }
 
     // ✅ Instantiate Services and Controllers
@@ -79,7 +87,11 @@ fun Application.module() {
         businessShortCode = darajaBusinessShortCode,
         callbackUrl = darajaCallbackUrl
     )
-    val darajaController = DarajaController(darajaService)
+    val orderService = OrderService(darajaService)
+    val darajaController = DarajaController(darajaService) { checkoutId, success, receipt ->
+        orderService.updateOrderPaymentStatusByCheckoutId(checkoutId, success, receipt)
+    }
+    val orderController = OrderController(orderService)
 
 
     // ✅ Configure JSON serialization
@@ -129,6 +141,9 @@ fun Application.module() {
 
         // 🔒 Protected routes
         authenticate("firebase-auth") {
+            // Orders
+            post("/orders") { orderController.createOrder(call) }
+            get("/orders/{id}") { orderController.getOrder(call) }
             get("/user/profile") {
                 val user = call.principal<FirebaseUser>()
                 call.respond(

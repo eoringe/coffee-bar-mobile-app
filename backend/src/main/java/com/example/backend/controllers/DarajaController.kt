@@ -8,7 +8,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.http.*
 
-class DarajaController(private val darajaService: DarajaService) {
+class DarajaController(private val darajaService: DarajaService, private val orderStatusUpdater: (checkoutRequestId: String, success: Boolean, mpesaReceipt: String?) -> Unit = { _, _, _ -> }) {
 
     suspend fun initiateStkPush(call: ApplicationCall) {
         try {
@@ -47,17 +47,11 @@ class DarajaController(private val darajaService: DarajaService) {
             println("ResultCode: ${stkCallback.resultCode}")
             println("ResultDesc: ${stkCallback.resultDesc}")
 
-            if (stkCallback.resultCode == 0) {
-                println("Payment Successful!")
-                stkCallback.callbackMetadata?.item?.forEach { item ->
-                    println("${item.name}: ${item.value}")
-                }
-                // TODO: Here you would typically find the order in your database
-                // using the CheckoutRequestID and update its status to "PAID".
-            } else {
-                println("Payment Failed/Cancelled.")
-                // TODO: Update order status to "FAILED" or "CANCELLED".
-            }
+            val success = stkCallback.resultCode == 0
+            val receipt = stkCallback.callbackMetadata?.item?.firstOrNull { it.name == "MpesaReceiptNumber" }?.value?.toString()
+            if (success) println("Payment Successful!") else println("Payment Failed/Cancelled.")
+
+            orderStatusUpdater(stkCallback.checkoutRequestID, success, receipt)
             println("------------------------------------")
 
             // Respond to Safaricom's server to acknowledge receipt
