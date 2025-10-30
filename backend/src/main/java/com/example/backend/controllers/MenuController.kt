@@ -7,7 +7,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import com.example.backend.models.*
 
 suspend fun getMenuItems(call: ApplicationCall) {
-    val baseImageUrl = "http://127.0.0.1:8000/storage/" // Laravel's storage URL
+    val baseImageUrl = "https://baristacoffeeapp-production.up.railway.app/storage/" // Laravel's storage URL
 
     val items = transaction {
         (MenuItems innerJoin Categories)
