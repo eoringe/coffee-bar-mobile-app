@@ -19,6 +19,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 // --- URL CONSTANT ---
+//CHANGE TO YOUR OWN IP ADDRESS HERE
 private const val API_SERVER_URL = "http://192.168.1.194:8080"
 
 
@@ -126,7 +127,7 @@ class HomeViewModel : ViewModel() {
                 }
 
             } catch (e: Exception) {
-                Log.e("HomeViewModel", "Failed to fetch/parse menu items", e)
+                Log.e("MenuModel", "Failed to fetch/parse menu items", e)
                 _menuUiState.value = MenuUiState.Error(e.message ?: "An unknown error occurred")
             }
         }

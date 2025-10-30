@@ -11,7 +11,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.coffeebarmobileapp.ui.auth.LoginScreen
 import com.example.coffeebarmobileapp.ui.auth.SignUpScreen
+import com.example.coffeebarmobileapp.ui.home.HomeScreen
 import com.example.coffeebarmobileapp.ui.landing.LandingScreen
+import com.example.coffeebarmobileapp.ui.navigation.Screen.SignUp
 
 sealed class Screen(val route: String) {
     object Landing : Screen("landing")
@@ -26,19 +28,14 @@ fun NavGraph(navController: NavHostController) {
         navController = navController,
         startDestination = Screen.Landing.route
     ) {
-        composable(Screen.Landing.route) {
-            LandingScreen(
-                onNavigateToLogin = {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(0) // clears backstack
-                    }
-                },
+        composable(Screen.Landing.route){
+            LandingScreen( onNavigateToLogin = {
+                navController.navigate(Screen.Login.route)
+            },
                 onNavigateToSignUp = {
                     navController.navigate(Screen.SignUp.route)
-                }
-            )
+                })
         }
-
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
@@ -47,12 +44,12 @@ fun NavGraph(navController: NavHostController) {
                     }
                 },
                 onNavigateToSignUp = {
-                    navController.navigate(Screen.SignUp.route)
+                    navController.navigate(SignUp.route)
                 }
             )
         }
 
-        composable(Screen.SignUp.route) {
+        composable(SignUp.route) {
             SignUpScreen(
                 onSignUpSuccess = {
                     navController.navigate(Screen.Home.route) {
@@ -66,7 +63,16 @@ fun NavGraph(navController: NavHostController) {
         }
 
         composable(Screen.Home.route) {
-            HomeScreen()
+            HomeScreen(
+                    onNavigateToLogin = { // <-- 1. Provide the lambda
+                        navController.navigate(Screen.Login.route) { // 2. Navigate to Login
+                            popUpTo(navController.graph.id) { // 3. Clear the entire app's back stack
+                                inclusive = true
+                            }
+                        }
+                    }
+
+            )
         }
     }
 }
