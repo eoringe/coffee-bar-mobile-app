@@ -29,15 +29,13 @@ import kotlin.collections.listOf
 import com.example.coffeebarmobileapp.ui.auth.AuthViewModel
 import android.util.Log
 import androidx.compose.ui.res.painterResource
-
-// Color definitions remain the same...
-val CoffeeBrown = Color(0xFF9C4400)
-val LightBrown = Color(0xFFF5E0D0)
-val TextGrey = Color(0xFF676767)
-val White = Color.White
-val Black = Color.Black
-val Red = Color(0xFFB71C1C)
-
+import com.example.coffeebarmobileapp.ui.profile.ProfileScreen
+import com.example.coffeebarmobileapp.ui.profile.ProfileTopAppBar
+import com.example.coffeebarmobileapp.ui.theme.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 @Composable
 fun HomeScreen(
@@ -48,10 +46,25 @@ fun HomeScreen(
     var selectedItem by remember { mutableStateOf(0) }
 
     val userName by viewModel.userName.collectAsState()
+    val userEmail by viewModel.userEmail.collectAsState()
     val menuUiState by viewModel.menuUiState.collectAsState()
 
+    // The "isRefreshing" state is true whenever the UI state is Loading
+    val isRefreshing = menuUiState is MenuUiState.Loading
+
+    val authState by authViewModel.state
+
     Scaffold(
-        topBar = { CoffeeShopTopAppBar() },
+        topBar = {
+            // Dynamic top bar now calls the public imported functions
+            when (selectedItem) {
+                0 -> CoffeeShopTopAppBar()
+                1 -> MenuTopAppBar()
+                2 -> CartTopAppBar()
+                3 -> ReceiptsTopAppBar()
+                4 -> ProfileTopAppBar()
+            }
+        },
         bottomBar = {
             CoffeeShopBottomNavigation(
                 selectedItem = selectedItem,
@@ -67,15 +80,32 @@ fun HomeScreen(
             when (selectedItem) {
                 0 -> HomeScreenContent(
                     userName = userName,
-                    menuUiState = menuUiState
+                    menuUiState = menuUiState,
+                    isRefreshing = isRefreshing, // <-- Pass the refreshing state down
+                    onRefresh = viewModel::fetchMenuItems // <-- Pass the refresh function
                 )
                 1 -> MenuScreen()
                 2 -> CartScreen()
                 3 -> ReceiptsScreen()
-                4 -> ProfileScreen( // <-- 3. Pass the logout logic
+                4 -> ProfileScreen(
+                    userName = userName,
+                    userEmail = userEmail,
+                    isLoading = authState.isLoading,
                     onLogoutClick = {
-                        authViewModel.logout() // 4. Call the logout function
-                        onNavigateToLogin()    // 5. Call the navigation function
+                        authViewModel.logout()
+                        onNavigateToLogin()
+                    },
+                    onChangePasswordClick = {
+                        // TODO: Handle password change logic
+                    },
+                    onSaveName = { newName, onSaveComplete ->
+                        authViewModel.updateProfileName(newName) {
+                            // 1. Tell HomeViewModel to get the new name
+                            viewModel.refreshUserName()
+
+                            // 2. Tell ProfileScreen to exit edit mode
+                            onSaveComplete()
+                        }
                     }
                 )
             }
@@ -86,24 +116,34 @@ fun HomeScreen(
 /**
  * The actual content of the home screen (Index 0)
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreenContent(
     userName: String,
     menuUiState: MenuUiState,
-    modifier: Modifier = Modifier
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier // <-- modifier is for the parent
 ) {
-    // This Column is now scrollable for just the home content
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxSize()
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
-        GreetingSection(userName = userName)
-        Spacer(modifier = Modifier.height(32.dp))
-        TodaySpecialSection(menuUiState = menuUiState)
-        Spacer(modifier = Modifier.height(24.dp))
+        Column(
+            modifier = Modifier // <-- Don't pass the parent's modifier here
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+        ) {
+            Spacer(modifier = Modifier.height(24.dp))
+            GreetingSection(userName = userName)
+            Spacer(modifier = Modifier.height(32.dp))
+            TodaySpecialSection(menuUiState = menuUiState)
+            Spacer(modifier = Modifier.height(24.dp))
+        }
     }
 }
 
@@ -140,38 +180,16 @@ private fun ReceiptsScreen() {
     }
 }
 
-@Composable
-private fun ProfileScreen(
-    onLogoutClick: () -> Unit // <-- 1. It now accepts a function to call
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Profile Screen", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // 2. The button calls the lambda when clicked
-        Button(onClick = onLogoutClick) {
-            Text("Logout")
-        }
-    }
-}
-
-// ---------------------------
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CoffeeShopTopAppBar() {
     TopAppBar(
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ){
                 Text(
-                    "Coffee Shop",
+                    "Coffee Bar",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Black
@@ -187,6 +205,34 @@ private fun CoffeeShopTopAppBar() {
             //
 
         },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
+    )
+}
+
+// Placeholder TopAppBars for other screens
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MenuTopAppBar() {
+    TopAppBar(
+        title = { Text("Menu", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CartTopAppBar() {
+    TopAppBar(
+        title = { Text("Cart", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReceiptsTopAppBar() {
+    TopAppBar(
+        title = { Text("Receipts", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
     )
 }
@@ -230,53 +276,48 @@ private fun TodaySpecialSection(menuUiState: MenuUiState) {
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        when (menuUiState) {
-            is MenuUiState.Loading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-            }
-            is MenuUiState.Error -> {
+        if (menuUiState is MenuUiState.Error) {
+            Text(
+                text = "Failed to load items. Please try again later.",
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        else if (menuUiState is MenuUiState.Success) {
+            if (menuUiState.items.isEmpty()) {
                 Text(
-                    text = "Failed to load items. Please try again later.",
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                    text = "Items will be added soon.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextGrey,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
-            }
-            is MenuUiState.Success -> {
-                if (menuUiState.items.isEmpty()) {
-                    Text(
-                        text = "Items will be added soon.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = TextGrey,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        menuUiState.items.chunked(2).forEach { itemPair ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    menuUiState.items.chunked(2).forEach { itemPair ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            SpecialItemCard(
+                                itemName = itemPair[0].name,
+                                itemPrice = itemPair[0].price,
+                                imageUrl = itemPair[0].fullImageUrl,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            if (itemPair.size > 1) {
                                 SpecialItemCard(
-                                    itemName = itemPair[0].name,
-                                    itemPrice = itemPair[0].price,
-                                    imageUrl = itemPair[0].fullImageUrl,
+                                    itemName = itemPair[1].name,
+                                    itemPrice = itemPair[1].price,
+                                    imageUrl = itemPair[1].fullImageUrl,
                                     modifier = Modifier.weight(1f)
                                 )
-
-                                if (itemPair.size > 1) {
-                                    SpecialItemCard(
-                                        itemName = itemPair[1].name,
-                                        itemPrice = itemPair[1].price,
-                                        imageUrl = itemPair[1].fullImageUrl,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                } else {
-                                    Spacer(Modifier.weight(1f))
-                                }
+                            } else {
+                                Spacer(Modifier.weight(1f))
                             }
                         }
                     }
@@ -300,7 +341,7 @@ private fun SpecialItemCard(
         modifier = modifier, // <-- 2. Apply the modifier here instead of a fixed width
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = LightBrown),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),

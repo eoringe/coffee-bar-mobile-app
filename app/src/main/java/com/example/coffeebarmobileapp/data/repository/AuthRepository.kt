@@ -6,6 +6,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.auth.ktx.userProfileChangeRequest
+import com.google.firebase.auth.ktx.userProfileChangeRequest
+import kotlinx.coroutines.tasks.await
 
 /**
  * Repository that handles authentication logic
@@ -92,6 +94,28 @@ class AuthRepository {
 
             // Step 4: Verify with your Ktor backend
             authApi.verifyUser(token)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Updates the display name for the currently logged-in user.
+     */
+    suspend fun updateProfileName(name: String): Result<Unit> {
+        return try {
+            val user = firebaseAuth.currentUser
+                ?: return Result.failure(Exception("User not logged in"))
+
+            // Create the profile update request
+            val profileUpdates = userProfileChangeRequest {
+                displayName = name
+            }
+
+            // Wait for the update to complete
+            user.updateProfile(profileUpdates).await()
+            Result.success(Unit)
+
         } catch (e: Exception) {
             Result.failure(e)
         }

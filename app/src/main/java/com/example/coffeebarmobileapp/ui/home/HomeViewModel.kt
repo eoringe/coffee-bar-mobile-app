@@ -42,7 +42,9 @@ data class MenuItemNetwork(
     @SerialName("double_price")
     val doublePrice: Int,
     @SerialName("image_url")
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+
+    val available: Boolean
 )
 
 data class MenuItemUiModel(
@@ -69,12 +71,17 @@ class HomeViewModel : ViewModel() {
     private val _userName = MutableStateFlow(auth.currentUser?.displayName ?: "Guest")
     val userName: StateFlow<String> = _userName.asStateFlow()
 
+    // --- User Email State ---
+    private val _userEmail = MutableStateFlow(auth.currentUser?.email ?: "No Email")
+    val userEmail: StateFlow<String> = _userEmail.asStateFlow()
+
     // --- THIS IS THE FIX ---
     // Create the "live feed" listener
     private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
         val user = firebaseAuth.currentUser
         // When the user logs in, this code will run and update the name
-        _userName.value = user?.displayName ?: "Guest"
+        _userEmail.value = user?.email ?: "No Email" // Update email
+        _userName.value = user?.displayName ?: "Guest" // Update name
         Log.d("HomeViewModel", "Auth state changed. New name: ${_userName.value}")
     }
     // -----------------------
@@ -98,11 +105,10 @@ class HomeViewModel : ViewModel() {
         // Start listening for auth changes *as soon as* the ViewModel is created
         auth.addAuthStateListener(authStateListener)
         // -------------------------------
-
         fetchMenuItems()
     }
 
-    private fun fetchMenuItems() {
+    fun fetchMenuItems() {
         viewModelScope.launch {
             _menuUiState.value = MenuUiState.Loading
             try {
@@ -111,7 +117,9 @@ class HomeViewModel : ViewModel() {
                 val apiResponse = client.get(url).body<MenuApiResponse>()
 
                 if (apiResponse.success) {
-                    val uiModels = apiResponse.data.map { networkItem ->
+                    val uiModels = apiResponse.data
+                        .filter { networkItem -> networkItem.available }
+                        .map { networkItem ->
                         MenuItemUiModel(
                             id = networkItem.id,
                             name = networkItem.coffeeTitle,
@@ -131,6 +139,18 @@ class HomeViewModel : ViewModel() {
                 _menuUiState.value = MenuUiState.Error(e.message ?: "An unknown error occurred")
             }
         }
+    }
+
+    /**
+     * Manually re-fetches the user info from FirebaseAuth.
+     * This is needed because the AuthStateListener does not
+     * fire on profile updates.
+     */
+    fun refreshUserName() {
+        val user = auth.currentUser
+        _userName.value = user?.displayName ?: "Guest"
+        _userEmail.value = user?.email ?: "No Email"
+        Log.d("HomeViewModel", "User info manually refreshed. New name: ${_userName.value}")
     }
 
     override fun onCleared() {
