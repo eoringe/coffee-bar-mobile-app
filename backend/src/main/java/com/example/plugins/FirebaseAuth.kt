@@ -1,7 +1,7 @@
 /**
- * The package declaration MUST match the file's directory structure.
- * This file is at: src/main/java/com/example/plugins/FirebaseAuth.kt
- * Therefore, the package MUST be com.example.plugins
+ * The package declaration MUST match the file's directory structure. This file is at:
+ * src/main/java/com/example/plugins/FirebaseAuth.kt Therefore, the package MUST be
+ * com.example.plugins
  */
 package com.example.plugins
 
@@ -13,15 +13,10 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import java.io.FileInputStream
 
-data class FirebaseUser(
-    val uid: String,
-    val email: String?,
-    val name: String?
-) : Principal
+data class FirebaseUser(val uid: String, val email: String?, val name: String?) : Principal
 
-class FirebaseAuthenticationProvider internal constructor(
-    config: Config
-) : AuthenticationProvider(config) {
+class FirebaseAuthenticationProvider internal constructor(config: Config) :
+        AuthenticationProvider(config) {
 
     val authenticationFunction = config.authenticationFunction
 
@@ -48,12 +43,13 @@ class FirebaseAuthenticationProvider internal constructor(
 }
 
 fun AuthenticationConfig.firebase(
-    name: String? = null,
-    configure: FirebaseAuthenticationProvider.Config.() -> Unit
+        name: String? = null,
+        configure: FirebaseAuthenticationProvider.Config.() -> Unit
 ) {
-    val provider = FirebaseAuthenticationProvider(
-        FirebaseAuthenticationProvider.Config(name).apply(configure)
-    )
+    val provider =
+            FirebaseAuthenticationProvider(
+                    FirebaseAuthenticationProvider.Config(name).apply(configure)
+            )
     register(provider)
 }
 
@@ -61,9 +57,10 @@ fun Application.configureFirebase() {
     try {
         val serviceAccount = FileInputStream("src/main/resources/firebase-service-account.json")
 
-        val options = FirebaseOptions.builder()
-            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-            .build()
+        val options =
+                FirebaseOptions.builder()
+                        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                        .build()
 
         if (FirebaseApp.getApps().isEmpty()) {
             FirebaseApp.initializeApp(options)
@@ -80,14 +77,9 @@ fun Application.configureFirebase() {
 suspend fun ApplicationCall.verifyFirebaseToken(token: String): Principal? {
     return try {
         val decodedToken = FirebaseAuth.getInstance().verifyIdToken(token)
-        FirebaseUser(
-            uid = decodedToken.uid,
-            email = decodedToken.email,
-            name = decodedToken.name
-        )
+        FirebaseUser(uid = decodedToken.uid, email = decodedToken.email, name = decodedToken.name)
     } catch (e: Exception) {
         application.log.error("Failed to verify Firebase token: ${e.message}")
         null
     }
 }
-

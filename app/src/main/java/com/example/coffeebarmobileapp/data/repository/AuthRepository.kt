@@ -3,7 +3,11 @@ package com.example.coffeebarmobileapp.data.repository
 import com.example.coffeebarmobileapp.data.models.User
 import com.example.coffeebarmobileapp.data.remote.AuthApi
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GetTokenResult
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.auth.ktx.userProfileChangeRequest
 
@@ -116,5 +120,44 @@ class AuthRepository {
      * Get current Firebase user
      */
     fun getCurrentUser() = firebaseAuth.currentUser
+
+    /**
+     * Get Firebase ID token using callback pattern (matches Java example)
+     * This is the equivalent of:
+     * FirebaseUser mUser = FirebaseAuth.getInstance().getCurrentUser();
+     * mUser.getIdToken(true).addOnCompleteListener(...)
+     */
+    fun getCurrentUserToken(
+        forceRefresh: Boolean = false,
+        onSuccess: (String) -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        val user: FirebaseUser? = firebaseAuth.currentUser
+        
+        if (user == null) {
+            onError(Exception("No user is currently signed in"))
+            return
+        }
+
+        user.getIdToken(forceRefresh)
+            .addOnCompleteListener(object : OnCompleteListener<GetTokenResult> {
+                override fun onComplete(task: Task<GetTokenResult>) {
+                    if (task.isSuccessful) {
+                        val idToken: String? = task.result?.token
+                        if (idToken != null) {
+                            // Send token to your backend via HTTPS
+                            onSuccess(idToken)
+                        } else {
+                            onError(Exception("Token is null"))
+                        }
+                    } else {
+                        // Handle error -> task.getException()
+                        val exception = task.exception
+                            ?: Exception("Unknown error getting token")
+                        onError(exception as? Exception ?: Exception(exception.message))
+                    }
+                }
+            })
+    }
 }
 

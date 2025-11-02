@@ -3,11 +3,7 @@ plugins {
     application
 }
 
-configurations.all {
-    resolutionStrategy {
-        force("com.google.guava:guava:32.1.3-jre")
-    }
-}
+configurations.all { resolutionStrategy { force("com.google.guava:guava:32.1.3-jre") } }
 
 dependencies {
     // Ktor Server (already correct)
@@ -37,19 +33,12 @@ dependencies {
 
     testImplementation(kotlin("test"))
 }
-application {
-    mainClass.set("com.example.ApplicationKt")
-}
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
-}
+application { mainClass.set("com.example.ApplicationKt") }
+
+java { toolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 
 kotlin {
     jvmToolchain(21)
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
-    }
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21) }
 }
