@@ -1,11 +1,14 @@
 package com.example
 
 import com.example.backend.controllers.DarajaController
-//import com.example.backend.controllers.OrderController
+import com.example.backend.controllers.OrderController
 import com.example.backend.controllers.getMenuItems
+import com.example.backend.models.Categories
+import com.example.backend.models.MenuItems
+import com.example.backend.models.OrderItems
+import com.example.backend.models.Orders
 import com.example.backend.services.DarajaService
-//import com.example.backend.services.OrderService
-import com.example.plugins.FirebaseUser
+import com.example.backend.services.OrderService
 import com.example.plugins.configureFirebase
 import com.example.plugins.firebase
 import com.example.plugins.verifyFirebaseToken
@@ -20,12 +23,8 @@ import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
-import com.example.backend.models.Categories
-import com.example.backend.models.MenuItems
-//import com.example.backend.models.OrderItems
-//import com.example.backend.models.Orders
 import java.io.File
-import java.util.Properties
+import java.util.*
 
 fun main() {
     embeddedServer(Netty, port = 8080, module = Application::module)
@@ -76,7 +75,7 @@ fun Application.module() {
 
     transaction {
         println("✅ Connected to database successfully!")
-        //SchemaUtils.createMissingTablesAndColumns(Categories, MenuItems, Orders, OrderItems)
+        SchemaUtils.createMissingTablesAndColumns(Categories, MenuItems, Orders, OrderItems)
     }
 
     // ✅ Instantiate Services and Controllers
@@ -87,10 +86,14 @@ fun Application.module() {
         businessShortCode = darajaBusinessShortCode,
         callbackUrl = darajaCallbackUrl
     )
-//    val orderService = OrderService(darajaService)
-    val darajaController = DarajaController(darajaService)
+    val orderService = OrderService(darajaService)
 
-//    val orderController = OrderController(orderService)
+    // The lambda provides the fallback mechanism for the callback
+    val darajaController = DarajaController(darajaService) { checkoutId, success, receipt ->
+        println("--- [Application.kt] CALLBACK received via controller lambda ---")
+        orderService.updateOrderPaymentStatusByCheckoutId(checkoutId, success, receipt)
+    }
+    val orderController = OrderController(orderService)
 
 
     // ✅ Configure JSON serialization
@@ -103,7 +106,7 @@ fun Application.module() {
     // ✅ Initialize Firebase
     configureFirebase()
 
-    // ✅ Configure Authentication
+    // ✅ Configure Authentication (Installed but not used for routes)
     install(Authentication) {
         firebase("firebase-auth") {
             validate { token ->
@@ -137,23 +140,23 @@ fun Application.module() {
         post("/payments/stk-push") {
             darajaController.initiateStkPush(call)
         }
-//
-        // 🔒 Protected routes
-        authenticate("firebase-auth") {
-            // Orders
-//            post("/orders") { orderController.createOrder(call) }
-//            get("/orders/{id}") { orderController.getOrder(call) }
-            get("/user/profile") {
-                val user = call.principal<FirebaseUser>()
-                call.respond(
-                    mapOf(
-                        "uid" to user?.uid,
-                        "email" to user?.email,
-                        "name" to user?.name
-                    )
+
+        // --- 🔒 Routes are now PUBLIC for testing ---
+        // The 'authenticate' block has been removed
+
+        // Orders
+        post("/orders") { orderController.createOrder(call) }
+        get("/orders/{id}") { orderController.getOrder(call) }
+
+        get("/user/profile") {
+            // Respond with dummy data since there is no authenticated user
+            call.respond(
+                mapOf(
+                    "uid" to "DUMMY_UID",
+                    "email" to "test@example.com",
+                    "name" to "Test User"
                 )
-            }
+            )
         }
     }
 }
-
