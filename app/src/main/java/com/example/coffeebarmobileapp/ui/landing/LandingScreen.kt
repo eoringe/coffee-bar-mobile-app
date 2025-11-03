@@ -35,121 +35,83 @@ fun LandingScreen(
             .background(Color(0xFFE6D3C7)),
         contentAlignment = Alignment.TopCenter
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 0.5.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        BoxWithConstraints {
+            val screenHeight = maxHeight
+            val screenWidth = maxWidth
 
-            // Top Image (responsive)
-            Box(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(500.dp)
-                    .clip(RoundedCornerShape(bottomStart = 200.dp))
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.landing_image),
-                    contentDescription = "Landing Image",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-
-            Text(
-                text = "Welcome to Strathmore University Coffee Shop",
-                color = Color(0xFF3A322C),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-
-            Text(
-                text = "Place your order and pick your coffee within minutes...",
-                color = Color(0xFFA88C76),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Sign In Button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .padding(horizontal = 100.dp)
-                    .shadow(
-                        elevation = 10.dp,
-                        shape = RoundedCornerShape(28.dp),
-                        ambientColor = Color.White.copy(alpha = 0.3f),
-                        spotColor = Color.White.copy(alpha = 0.3f)
+                // Responsive image height (45% of screen height)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(screenHeight * 0.45f)
+                        .clip(RoundedCornerShape(bottomStart = screenWidth * 0.5f))
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.landing_image),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
-                    .background(Color(0xFF3A322C), RoundedCornerShape(28.dp))
-                    .clickable { onNavigateToLogin() },
-                contentAlignment = Alignment.Center
-            ) {
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
-                    text = "Sign In",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    "Welcome to Strathmore University Coffee Shop",
+                    color = Color(0xFF3A322C),
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // Info Text
-            Text(
-                text = "If you don't already have an account",
-                color = Color(0xFF3A312C),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Sign Up Button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .padding(horizontal = 100.dp)
-                    .shadow(
-                        elevation = 10.dp,
-                        shape = RoundedCornerShape(28.dp),
-                        ambientColor = Color.White.copy(alpha = 0.3f),
-                        spotColor = Color.White.copy(alpha = 0.3f)
-                    )
-                    .background(Color.LightGray, RoundedCornerShape(28.dp))
-                    .clickable { onNavigateToSignUp() },
-                contentAlignment = Alignment.Center
-            ) {
                 Text(
-                    text = "Sign Up",
-                    color = Color.Black,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    "Place your order and pick your coffee within minutes...",
+                    color = Color(0xFFA88C76),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Buttons now scale
+                ButtonBox("Sign In", Color(0xFF3A322C), Color.White) { onNavigateToLogin() }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Don't have an account?", color = Color(0xFF3A312C))
+                Spacer(modifier = Modifier.height(12.dp))
+                ButtonBox("Sign Up", Color.LightGray, Color.Black) { onNavigateToSignUp() }
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
     }
 }
+
+@Composable
+fun ButtonBox(text: String, bg: Color, textColor: Color, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth(0.85f) // ✅ responsive width
+            .height(50.dp)
+            .shadow(10.dp, RoundedCornerShape(28.dp))
+            .background(bg, RoundedCornerShape(28.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, color = textColor, fontWeight = FontWeight.Bold)
+    }
+}
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
