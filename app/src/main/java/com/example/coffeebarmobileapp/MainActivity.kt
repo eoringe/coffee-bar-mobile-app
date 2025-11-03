@@ -1,6 +1,4 @@
 package com.example.coffeebarmobileapp
-//
-//
 
 import android.os.Bundle
 import android.util.Log
@@ -20,10 +18,16 @@ import com.example.coffeebarmobileapp.ui.auth.AuthViewModel
 
 class MainActivity : ComponentActivity() {
 
-    private val authViewModel: AuthViewModel by viewModels() // Get your ViewModel
+    private val authViewModel: AuthViewModel by viewModels()
+
+    // --- 1. Add a Tag for logging ---
+    private val TAG = "MainActivityLifecycle"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // --- 2. Add your log ---
+        Log.d(TAG, "onCreate: Activity is being created.")
 
         // Initialize Firebase
         FirebaseApp.initializeApp(this)
@@ -44,5 +48,31 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    // --- 3. Add all the other lifecycle override functions ---
+    override fun onStart() {
+        super.onStart()
+        Log.d(TAG, "onStart: Activity is becoming visible.")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d(TAG, "onResume: Activity is in the foreground and interactive.")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.d(TAG, "onPause: Activity is partially obscured (e.g., dialog, split-screen).")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d(TAG, "onStop: Activity is no longer visible (in background).")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "onDestroy: Activity is being destroyed.")
     }
 }

@@ -12,33 +12,48 @@ import io.ktor.server.response.*
 class OrderController(private val orderService: OrderService) {
 
     suspend fun createOrder(call: ApplicationCall) {
-        val user = call.principal<FirebaseUser>()
-        if (user?.uid == null) {
-            call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Unauthorized"))
-            return
-        }
+        // val user = call.principal<FirebaseUser>()
+        // if (user?.uid == null) {
+        //     call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Unauthorized"))
+        //     return
+        // }
+        // --- MODIFIED: Using a dummy UID for testing ---
+        val dummyUserUid = "UNAUTHENTICATED_TEST_USER"
+        println("--- [OrderController] createOrder called (unauthenticated) ---")
 
         val request = try { call.receive<CreateOrderRequest>() } catch (e: Exception) {
+            println("--- [OrderController] Invalid body: ${e.message} ---")
             call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid body"))
             return
         }
 
         try {
-            val response = orderService.createOrder(user.uid, request)
-            call.respond(HttpStatusCode.OK, response)
+            // Pass the dummy UID
+            val response = orderService.createOrder(dummyUserUid, request)
+
+            // Respond based on the final status from the service
+            val statusCode = when(response.status) {
+                "PAID" -> HttpStatusCode.Created
+                "PENDING_PAYMENT" -> HttpStatusCode.Accepted
+                else -> HttpStatusCode.OK // "FAILED" or other states
+            }
+            call.respond(statusCode, response)
+
         } catch (e: IllegalArgumentException) {
+            println("--- [OrderController] Bad request: ${e.message} ---")
             call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
         } catch (e: Exception) {
+            println("--- [OrderController] Server error: ${e.message} ---")
             call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "Unknown error")))
         }
     }
 
     suspend fun getOrder(call: ApplicationCall) {
-        val user = call.principal<FirebaseUser>()
-        if (user?.uid == null) {
-            call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Unauthorized"))
-            return
-        }
+        // val user = call.principal<FirebaseUser>()
+        // if (user?.uid == null) {
+        //     call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Unauthorized"))
+        //     return
+        // }
 
         val orderId = call.parameters["id"]?.toIntOrNull()
         if (orderId == null) {
@@ -54,5 +69,3 @@ class OrderController(private val orderService: OrderService) {
         call.respond(order)
     }
 }
-
-

@@ -7,7 +7,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,11 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,14 +42,18 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-
     val state = viewModel.state.value
 
-    // 1. Configure Google Sign-In options
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+    val imageHeight = screenHeight * 0.35f // 35% of screen height
+
+    val TAG = "LoginScreen"
+
     val gso = remember {
-        // Find your Web Client ID in the google-services.json file
-        // It's the "client_id" inside the "client" array where "client_type" is 3
         val webClientId = "285872124510-c7bjb4darap8l60d2881utac2q2a0l2i.apps.googleusercontent.com"
+        Log.d(TAG, "Configuring Google Sign-In with webClientId: $webClientId")
+
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(webClientId)
             .requestEmail()
@@ -55,183 +61,167 @@ fun LoginScreen(
     }
 
     val googleSignInClient: GoogleSignInClient = remember {
+        Log.d(TAG, "Creating GoogleSignInClient")
         GoogleSignIn.getClient(context, gso)
     }
 
-    // 2. Set up Activity Result Launcher
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        Log.d(TAG, "Google Sign-In result received. ResultCode = ${result.resultCode}")
+
         if (result.resultCode == Activity.RESULT_OK) {
+            Log.d(TAG, "Result OK, extracting sign-in account from intent.")
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)
+                Log.d(TAG, "Google account received: ${account?.email}")
                 val idToken = account?.idToken
                 if (idToken != null) {
+                    Log.d(TAG, "Google ID Token successfully retrieved (length = ${idToken.length})")
                     viewModel.signInWithGoogle(idToken)
                 } else {
-                    // Handle error: ID token is null
-                    Log.e("LoginScreen", "Google Sign-In failed: ID Token was null.")
+                    Log.e(TAG, "Google Sign-In failed: ID Token was null.")
                 }
             } catch (e: ApiException) {
-                // Handle error: Google Sign-In failed
-                Log.e("LoginScreen", "Google Sign-In failed with ApiException: ${e.statusCode}")
+                Log.e(TAG, "Google Sign-In failed with ApiException. StatusCode=${e.statusCode}", e)
             }
+        } else {
+            Log.e(TAG, "Google Sign-In canceled or failed. ResultCode=${result.resultCode}")
         }
     }
 
-
-    // Navigate on success
     LaunchedEffect(state.isSuccess) {
         if (state.isSuccess) {
+            Log.d(TAG, "Login successful. Navigating to home screen.")
             onLoginSuccess()
         }
     }
 
-    Column(
+    // UI
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFE6D3C7))
-            .padding(0.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(400.dp)
-                .clip(RoundedCornerShape(bottomEnd = 200.dp))
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.login),
-                contentDescription = "Landing Image",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Coffee Bar Login",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        // Email field
-        TextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth() .padding(horizontal=30.dp),
-            singleLine = true,
-            enabled = !state.isLoading,
-            colors=TextFieldDefaults.colors(
-                unfocusedContainerColor = Color.Transparent
-
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Password field
-        TextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth() .padding(horizontal=30.dp),
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            enabled = !state.isLoading,
-            colors=TextFieldDefaults.colors(
-                unfocusedContainerColor = Color.Transparent
-            )
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Login button
-        Button(
-            onClick = {
-                scope.launch {
-                    viewModel.login(email, password)
-                }
-            },
-            modifier = Modifier.fillMaxWidth() .padding(horizontal=100.dp) .background(Color(0xFF3A322C),RoundedCornerShape(28.dp)),
-            enabled = !state.isLoading && email.isNotBlank() && password.isNotBlank(),
-            shape=RoundedCornerShape(28.dp)
-        ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            } else {
-                Text(
-                    text = "Login",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+            // Top image
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(imageHeight)
+                    .clip(RoundedCornerShape(bottomEnd = 160.dp))
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.login),
+                    contentDescription = "Login background",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-        // Google Sign-In Button
-        OutlinedButton(
-            onClick = {
-                // 3. Launch the Google Sign-In flow
-                val signInIntent = googleSignInClient.signInIntent
-                googleSignInLauncher.launch(signInIntent)
-            },
-            modifier = Modifier.fillMaxWidth() .padding(horizontal=80.dp),
-            enabled = !state.isLoading
-        ) {
-            // You can add a Google icon here
-            Icon(
-                painter = painterResource(id = R.drawable.ic_google),
-                contentDescription = "Google Icon",
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Sign in with Google")
-        }
-
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Sign up button
-        TextButton(
-            onClick = onNavigateToSignUp,
-            enabled = !state.isLoading
-        ) {
             Text(
-                text="Don't have an account? Sign Up",
-                color=Color.White
+                text = "Coffee Bar Login",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color(0xFF3A322C),
+                fontWeight = FontWeight.Bold
             )
-        }
 
-        // Error message
-        if (state.error != null) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            TextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                singleLine = true,
+                enabled = !state.isLoading,
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = state.error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
 
-        // Success message
-        if (state.user != null) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Welcome ${state.user.email}!",
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodyMedium
+            TextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                enabled = !state.isLoading,
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
             )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Button(
+                onClick = {
+                    Log.d(TAG, "Manual login clicked with email=$email")
+                    scope.launch { viewModel.login(email, password) }
+                },
+                enabled = !state.isLoading && email.isNotBlank() && password.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3A322C)),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = Color.White
+                    )
+                } else {
+                    Text("Login", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            OutlinedButton(
+                onClick = {
+                    Log.d(TAG, "Google Sign-In button clicked, launching sign-in intent.")
+                    val signInIntent = googleSignInClient.signInIntent
+                    googleSignInLauncher.launch(signInIntent)
+                },
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .height(50.dp),
+                enabled = !state.isLoading,
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_google),
+                    contentDescription = "Google Icon",
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Sign in with Google", fontSize = 15.sp)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(onClick = onNavigateToSignUp, enabled = !state.isLoading) {
+                Text("Don't have an account? Sign Up", color = Color(0xFF3A322C))
+            }
+
+            if (state.error != null) {
+                Log.e(TAG, "Error occurred: ${state.error}")
+                Text(state.error, color = MaterialTheme.colorScheme.error)
+            } else if (state.user != null) {
+                Log.d(TAG, "User authenticated successfully: ${state.user.email}")
+                Text("Welcome ${state.user.email}!", color = MaterialTheme.colorScheme.primary)
+            }
+
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
-
-

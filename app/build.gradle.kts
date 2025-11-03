@@ -90,6 +90,8 @@ dependencies {
 
     implementation("androidx.compose.material:material-icons-extended")
 
+    implementation("androidx.compose.material3:material3")
+
     // For loading images from a URL
     implementation("io.coil-kt:coil-compose:2.6.0")
 }

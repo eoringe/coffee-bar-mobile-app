@@ -112,6 +112,29 @@ class AuthViewModel : ViewModel() {
         repository.logout()
         _state.value = AuthState()
     }
+
+    /**
+     * Update the user's profile name
+     * Accepts an onComplete callback to run after the network request.
+     */
+    fun updateProfileName(name: String, onComplete: () -> Unit) { // <-- 1. Add onComplete
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+
+            repository.updateProfileName(name)
+                .onSuccess {
+                    _state.value = _state.value.copy(isLoading = false)
+                    onComplete() // <-- 2. Call the callback on success
+                }
+                .onFailure { error ->
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = error.message ?: "Update failed"
+                    )
+                    onComplete() // <-- 3. Also call on failure
+                }
+        }
+    }
 }
 
 /**
