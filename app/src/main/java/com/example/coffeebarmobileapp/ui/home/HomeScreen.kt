@@ -30,12 +30,18 @@ import com.example.coffeebarmobileapp.ui.auth.AuthViewModel
 import android.util.Log
 import androidx.compose.ui.res.painterResource
 import com.example.coffeebarmobileapp.ui.profile.ProfileScreen
-import com.example.coffeebarmobileapp.ui.profile.ProfileTopAppBar
+import com.example.coffeebarmobileapp.ui.menu.MenuScreen
 import com.example.coffeebarmobileapp.ui.theme.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import com.example.coffeebarmobileapp.ui.components.CartTopAppBar
+import com.example.coffeebarmobileapp.ui.components.CoffeeShopBottomNavigation
+import com.example.coffeebarmobileapp.ui.components.CoffeeShopTopAppBar
+import com.example.coffeebarmobileapp.ui.components.MenuTopAppBar
+import com.example.coffeebarmobileapp.ui.components.ProfileTopAppBar
+import com.example.coffeebarmobileapp.ui.components.ReceiptsTopAppBar
 
 @Composable
 fun HomeScreen(
@@ -56,7 +62,7 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            // Dynamic top bar now calls the public imported functions
+            // This 'when' block now calls your public functions
             when (selectedItem) {
                 0 -> CoffeeShopTopAppBar()
                 1 -> MenuTopAppBar()
@@ -66,6 +72,7 @@ fun HomeScreen(
             }
         },
         bottomBar = {
+            // This just calls your public bottom nav function
             CoffeeShopBottomNavigation(
                 selectedItem = selectedItem,
                 onItemSelected = { index ->
@@ -219,23 +226,23 @@ private fun MenuTopAppBar() {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CartTopAppBar() {
-    TopAppBar(
-        title = { Text("Cart", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ReceiptsTopAppBar() {
-    TopAppBar(
-        title = { Text("Receipts", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
-    )
-}
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//private fun CartTopAppBar() {
+//    TopAppBar(
+//        title = { Text("Cart", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
+//        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
+//    )
+//}
+//
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//private fun ReceiptsTopAppBar() {
+//    TopAppBar(
+//        title = { Text("Receipts", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
+//        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
+//    )
+//}
 
 @Composable
 private fun GreetingSection(userName: String) {
@@ -399,38 +406,38 @@ private fun SpecialItemCard(
     }
 }
 
-/**
- * A stateless bottom navigation bar.
- * (This code is perfect, no changes needed)
- */
-@Composable
-private fun CoffeeShopBottomNavigation(selectedItem: Int, onItemSelected: (Int) -> Unit) {
-    val items = listOf(
-        "Home" to Icons.Filled.Home,
-        "Menu" to Icons.Filled.Menu,
-        "Cart" to Icons.Filled.ShoppingCart,
-        "Receipts" to Icons.Filled.Receipt,
-        "Profile" to Icons.Filled.Person
-    )
-
-    NavigationBar(containerColor = White) {
-        items.forEachIndexed { index, item ->
-            NavigationBarItem(
-                icon = { Icon(item.second, contentDescription = item.first) },
-                label = { Text(item.first) },
-                selected = selectedItem == index,
-                onClick = { onItemSelected(index) }, // Calls the lambda
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = CoffeeBrown,
-                    selectedTextColor = CoffeeBrown,
-                    indicatorColor = LightBrown,
-                    unselectedIconColor = TextGrey,
-                    unselectedTextColor = TextGrey
-                )
-            )
-        }
-    }
-}
+///**
+// * A stateless bottom navigation bar.
+// * (This code is perfect, no changes needed)
+// */
+//@Composable
+//private fun CoffeeShopBottomNavigation(selectedItem: Int, onItemSelected: (Int) -> Unit) {
+//    val items = listOf(
+//        "Home" to Icons.Filled.Home,
+//        "Menu" to Icons.Filled.Menu,
+//        "Cart" to Icons.Filled.ShoppingCart,
+//        "Receipts" to Icons.Filled.Receipt,
+//        "Profile" to Icons.Filled.Person
+//    )
+//
+//    NavigationBar(containerColor = White) {
+//        items.forEachIndexed { index, item ->
+//            NavigationBarItem(
+//                icon = { Icon(item.second, contentDescription = item.first) },
+//                label = { Text(item.first) },
+//                selected = selectedItem == index,
+//                onClick = { onItemSelected(index) }, // Calls the lambda
+//                colors = NavigationBarItemDefaults.colors(
+//                    selectedIconColor = CoffeeBrown,
+//                    selectedTextColor = CoffeeBrown,
+//                    indicatorColor = LightBrown,
+//                    unselectedIconColor = TextGrey,
+//                    unselectedTextColor = TextGrey
+//                )
+//            )
+//        }
+//    }
+//}
 
 //@Preview(showBackground = true, widthDp = 390, heightDp = 844)
 //@Composable
