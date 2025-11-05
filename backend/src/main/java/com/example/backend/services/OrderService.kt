@@ -12,7 +12,11 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
-class OrderService(private val darajaService: DarajaService) {
+// --- CHANGE 1: Inject ReceiptService ---
+class OrderService(
+    private val darajaService: DarajaService,
+    private val receiptService: ReceiptService // <-- ADDED
+) {
 
     /**
      * This function is now a suspend function to allow for polling.
@@ -41,14 +45,13 @@ class OrderService(private val darajaService: DarajaService) {
 
 
         // 2. Save order as PENDING_PAYMENT
-        // We MUST do this first, so the callback has an order to update.
         var orderId: Int = -1
         transaction {
             val inserted = Orders.insert { r ->
-                r[Orders.userUid] = userUid // "UNAUTHENTICATED" for testing
+                r[Orders.userUid] = userUid
                 r[Orders.phoneNumber] = request.phoneNumber
                 r[Orders.totalAmount] = totalAmount
-                r[Orders.status] = "PENDING_PAYMENT" // Always start as pending
+                r[Orders.status] = "PENDING_PAYMENT"
                 r[Orders.checkoutRequestId] = null
                 r[Orders.merchantRequestId] = null
                 r[Orders.mpesaReceiptNumber] = null
@@ -82,14 +85,13 @@ class OrderService(private val darajaService: DarajaService) {
         var checkoutRequestId: String? = null
         var merchantRequestId: String? = null
         var currentStatus = "PENDING_PAYMENT"
-        var message: String = "" // ✅ <-- THE FIX IS HERE
+        var message: String = ""
 
         stkResult.onSuccess { response ->
             println("--- [OrderService] 4. STK Push initiated. CheckoutID: ${response.checkoutRequestID} ---")
             checkoutRequestId = response.checkoutRequestID
             merchantRequestId = response.merchantRequestID
 
-            // Update the order with the CheckoutRequestID
             transaction {
                 Orders.update({ Orders.id eq orderId }) { r ->
                     r[Orders.checkoutRequestId] = response.checkoutRequestID
@@ -97,54 +99,53 @@ class OrderService(private val darajaService: DarajaService) {
                 }
             }
 
-            // 4. NEW: Poll for the result
             println("--- [OrderService] 5. Starting polling loop (max 60 seconds)... ---")
 
-            // Poll for 60 seconds (12 polls * 5 seconds)
             val finalPollResult = withTimeoutOrNull(60_000L) {
                 var isPaymentComplete = false
                 var pollResponseCode: String? = null
 
                 while (!isPaymentComplete) {
-                    delay(5000L) // Wait 5 seconds between polls
+                    delay(5000L)
 
                     val queryResult = darajaService.queryStkPushStatus(response.checkoutRequestID)
 
                     queryResult.onSuccess { queryResponse ->
                         pollResponseCode = queryResponse.resultCode
+
+                        // --- SYNTAX FIX 1: Corrected 'when' block ---
                         when (queryResponse.resultCode) {
                             "0" -> { // 0 = Payment successful
                                 println("--- [OrderService] 6a. POLLING: SUCCESS! Payment received. ---")
                                 updateOrderPaymentStatusByCheckoutId(
                                     checkoutRequestId = response.checkoutRequestID,
                                     success = true,
-                                    mpesaReceiptNumber = "FROM_POLL" // Note: Query API doesn't return receipt number
+                                    mpesaReceiptNumber = null // Polling doesn't provide this
                                 )
                                 isPaymentComplete = true
                             }
-                            // All other codes are failures (1032=Cancelled, 1=Insufficient funds, etc.)
                             null, "" -> {
-                                println("--- [OrderService] 6b. POLLING: Still processing (ResultCode is null)... ---")
+                                println("? [OrderService] POLLING: Still processing (ResultCode is null)... ---")
                             }
                             else -> {
-                                println("--- [OrderService] 6c. POLLING: FAILED! ResultCode: ${queryResponse.resultCode} (${queryResponse.resultDesc}) ---")
+                                println("❌ [OrderService] POLLING: FAILED! ResultCode: ${queryResponse.resultCode} (${queryResponse.resultDesc}) ---")
                                 updateOrderPaymentStatusByCheckoutId(
                                     checkoutRequestId = response.checkoutRequestID,
-                                    success = false,
+                                    success = false, // <-- LOGIC FIX
                                     mpesaReceiptNumber = null
                                 )
                                 isPaymentComplete = true
                             }
                         }
                     }.onFailure {
-                        println("--- [OrderService] 6d. POLLING: Query API call failed. Will retry. ${it.message} ---")
+                        println("❌ [OrderService] POLLING: Query API call failed. Will retry. ${it.message} ---")
                         // Don't break loop, just let it retry
                     }
                 }
-                pollResponseCode // Return the final code
+                pollResponseCode
             }
 
-            // 5. Check poll results
+            // --- SYNTAX FIX 2: Restored 'if' condition ---
             if (finalPollResult == "0") {
                 currentStatus = "PAID"
                 message = "Payment successful (confirmed via polling)."
@@ -159,7 +160,6 @@ class OrderService(private val darajaService: DarajaService) {
 
 
         }.onFailure {
-            // This means the STK push *initiation* failed
             println("--- [OrderService] 4b. STK Push INITIATION FAILED: ${it.message} ---")
             transaction {
                 Orders.update({ Orders.id eq orderId }) { r ->
@@ -196,23 +196,48 @@ class OrderService(private val darajaService: DarajaService) {
                     return@transaction
                 }
 
-            // Only update if it's still pending (prevents race conditions)
+            // Only process if it's still PENDING_PAYMENT
             if (order[Orders.status] == "PENDING_PAYMENT") {
                 val newStatus = if (success) "PAID" else "FAILED"
-                println("✅ [OrderService] Updating order ${order[Orders.id]} to $newStatus")
+                // --- LOGGING CHANGE ---
+                println("? [OrderService] Updating order ${order[Orders.id]} to $newStatus")
+
                 Orders.update({ Orders.id eq order[Orders.id] }) { r ->
                     r[Orders.status] = newStatus
                     if (mpesaReceiptNumber != null) {
                         r[Orders.mpesaReceiptNumber] = mpesaReceiptNumber
                     }
                 }
+
+                // --- CHANGE 2: Generate receipt *after* successful payment ---
+                if (success) {
+                    // --- NEW LOG ---
+                    println("--- [OrderService] Payment successful. Triggering receipt generation for order ${order[Orders.id]}... ---")
+                    // This runs inside the same transaction.
+                    // It's "event-driven": The "PAID" status event triggers this.
+                    receiptService.generateReceiptForOrder(order[Orders.id])
+                }
+                // --- End of Change 2 ---
+
             } else {
-                println("ℹ️ [OrderService] Order ${order[Orders.id]} already processed. Ignoring duplicate update.")
+                // --- LOGGING CHANGE ---
+                println("?? [OrderService] Order ${order[Orders.id]} already processed. Ignoring duplicate update.")
+
+                // Handle late callback: Update M-Pesa number if it was missing from polling
+                if (success && mpesaReceiptNumber != null && order[Orders.mpesaReceiptNumber] == null) {
+                    // --- LOGGING CHANGE ---
+                    println("?? [OrderService] Updating missing M-Pesa number for order ${order[Orders.id]}.")
+                    Orders.update({ Orders.id eq order[Orders.id] }) { r ->
+                        r[Orders.mpesaReceiptNumber] = mpesaReceiptNumber
+                    }
+                    // We could also update the receipt JSON here, but this is simpler for now.
+                }
             }
         }
     }
 
     fun getOrderById(orderId: Int): Map<String, Any?>? {
+        // ... (this function remains unchanged)
         val orderRow = transaction { Orders.select { Orders.id eq orderId }.singleOrNull() } ?: return null
         val items = transaction {
             OrderItems.select { OrderItems.orderId eq orderId }
