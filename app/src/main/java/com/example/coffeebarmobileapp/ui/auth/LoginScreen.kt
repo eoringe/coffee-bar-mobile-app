@@ -46,7 +46,7 @@ fun LoginScreen(
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
-    val imageHeight = screenHeight * 0.35f // 35% of screen height
+    val imageHeight = screenHeight * 0.35f // 35% of screen heigh
 
     val TAG = "LoginScreen"
 
@@ -112,7 +112,7 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = screenWidth * 0.06f, vertical = 16.dp),
+                .padding(0.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top image
@@ -147,7 +147,9 @@ fun LoginScreen(
                 label = { Text("Email") },
                 singleLine = true,
                 enabled = !state.isLoading,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal=30.dp),
                 colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
             )
 
@@ -160,7 +162,9 @@ fun LoginScreen(
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 enabled = !state.isLoading,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 30.dp),
                 colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
             )
 
