@@ -65,7 +65,7 @@ fun HomeScreen(
             // This 'when' block now calls your public functions
             when (selectedItem) {
                 0 -> CoffeeShopTopAppBar()
-                1 -> MenuTopAppBar()
+                1 -> {}
                 2 -> CartTopAppBar()
                 3 -> ReceiptsTopAppBar()
                 4 -> ProfileTopAppBar()
@@ -83,7 +83,17 @@ fun HomeScreen(
         containerColor = White
     ) { innerPadding ->
 
-        Box(modifier = Modifier.padding(innerPadding)) {
+        Box(
+            modifier = Modifier.padding(
+                if (selectedItem == 1) {
+                    // Menu screen manages its own top padding
+                    PaddingValues(bottom = innerPadding.calculateBottomPadding())
+                } else {
+                    // Other screens use full padding
+                    innerPadding
+                }
+            )
+        )  {
             when (selectedItem) {
                 0 -> HomeScreenContent(
                     userName = userName,
