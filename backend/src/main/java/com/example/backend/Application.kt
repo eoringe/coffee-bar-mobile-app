@@ -10,6 +10,7 @@ import com.example.backend.models.OrderItems
 import com.example.backend.models.Orders
 import com.example.backend.models.Receipts // <-- CHANGE 1
 import com.example.backend.services.DarajaService
+import com.example.backend.services.NotificationService
 import com.example.backend.services.OrderService
 import com.example.backend.services.ReceiptService // <-- CHANGE 1
 import com.example.plugins.configureFirebase
@@ -89,9 +90,10 @@ fun Application.module() {
         callbackUrl = darajaCallbackUrl
     )
     val receiptService = ReceiptService() // <-- ADDED
+    val notificationService = NotificationService() // <-- ADDED
 
-    // --- CHANGE 4: Pass ReceiptService into OrderService ---
-    val orderService = OrderService(darajaService, receiptService) // <-- MODIFIED
+    // --- CHANGE 4: Pass ReceiptService and NotificationService into OrderService ---
+    val orderService = OrderService(darajaService, receiptService, notificationService) // <-- MODIFIED
 
     val darajaController = DarajaController(darajaService) { checkoutId, success, receipt ->
         println("--- [Application.kt] CALLBACK received via controller lambda ---")
@@ -131,6 +133,7 @@ fun Application.module() {
         // Order routes
         post("/orders") { orderController.createOrder(call) }
         get("/orders/{id}") { orderController.getOrder(call) }
+        put("/orders/{id}/status") { orderController.updateOrderStatus(call) }
 
         // --- CHANGE 5: Add new receipt route ---
         get("/orders/{id}/receipt") { receiptController.getReceiptForOrder(call) }
@@ -230,11 +233,12 @@ fun Application.module() {
         businessShortCode = darajaBusinessShortCode,
         callbackUrl = darajaCallbackUrl
     )
-    // --- Instantiate new ReceiptService ---
+    // --- Instantiate new ReceiptService and NotificationService ---
     val receiptService = ReceiptService()
+    val notificationService = NotificationService()
 
-    // --- Inject ReceiptService into OrderService ---
-    val orderService = OrderService(darajaService, receiptService)
+    // --- Inject ReceiptService and NotificationService into OrderService ---
+    val orderService = OrderService(darajaService, receiptService, notificationService)
 
     val darajaController = DarajaController(darajaService) { checkoutId, success, receipt ->
         println("--- [Application.kt] CALLBACK received via controller lambda ---")
@@ -296,6 +300,7 @@ fun Application.module() {
             // Orders
             post("/orders") { orderController.createOrder(call) }
             get("/orders/{id}") { orderController.getOrder(call) }
+            put("/orders/{id}/status") { orderController.updateOrderStatus(call) }
 
             // New Receipt Endpoint
             get("/orders/{id}/receipt") { receiptController.getReceipt(call) }

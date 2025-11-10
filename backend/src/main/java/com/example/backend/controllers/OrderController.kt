@@ -68,6 +68,49 @@ class OrderController(private val orderService: OrderService) {
         }
         call.respond(order)
     }
+
+    suspend fun updateOrderStatus(call: ApplicationCall) {
+        // TODO: Add admin/barista authentication check here
+        // For now, allowing unauthenticated access for testing
+        
+        val orderId = call.parameters["id"]?.toIntOrNull()
+        if (orderId == null) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid order id"))
+            return
+        }
+
+        val request = try {
+            call.receive<Map<String, String>>()
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid request body. Expected: {\"status\": \"READY\"}"))
+            return
+        }
+
+        val newStatus = request["status"]
+        if (newStatus == null) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing 'status' field"))
+            return
+        }
+
+        try {
+            val success = orderService.updateOrderStatus(orderId, newStatus)
+            if (success) {
+                call.respond(HttpStatusCode.OK, mapOf(
+                    "success" to true,
+                    "message" to "Order status updated successfully",
+                    "orderId" to orderId,
+                    "status" to newStatus
+                ))
+            } else {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Order not found"))
+            }
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
+        } catch (e: Exception) {
+            println("--- [OrderController] Server error: ${e.message} ---")
+            call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "Unknown error")))
+        }
+    }
 }
 
 //=============================THIS WILL BE UNCOMMENTED TO RE ENABLE AUTHENTICATION===========================/
