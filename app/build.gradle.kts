@@ -94,4 +94,6 @@ dependencies {
 
     // For loading images from a URL
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    implementation("io.ktor:ktor-client-auth:2.3.11")
 }

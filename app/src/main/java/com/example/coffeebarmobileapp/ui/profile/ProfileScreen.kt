@@ -34,7 +34,6 @@ fun ProfileScreen(
     userEmail: String,
     isLoading: Boolean,
     onLogoutClick: () -> Unit,
-    onChangePasswordClick: () -> Unit,
     onSaveName: (newName: String, onSaveComplete: () -> Unit) -> Unit
 ) {
     var isEditing by remember { mutableStateOf(false) }
@@ -228,7 +227,6 @@ private fun ProfileScreenPreview() {
                 userEmail = "gift@strathmore.edu",
                 isLoading = false,
                 onLogoutClick = {},
-                onChangePasswordClick = {},
                 onSaveName = { _, _ -> }            )
         }
     }

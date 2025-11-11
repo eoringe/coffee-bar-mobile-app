@@ -11,6 +11,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.coffeebarmobileapp.ui.theme.*
+import androidx.compose.material.icons.filled.ArrowBack
+import com.example.coffeebarmobileapp.ui.theme.Black
+import com.example.coffeebarmobileapp.ui.theme.White
 
 /**
  * The main Bottom Navigation Bar for the app.
@@ -143,6 +146,30 @@ fun ReceiptsTopAppBar() {
         actions = {
             Icon(Icons.Filled.NightsStay, contentDescription = "Dark Mode", modifier = Modifier.padding(end = 8.dp))
             Icon(Icons.Filled.Notifications, contentDescription = "Notifications", modifier = Modifier.padding(end = 8.dp))
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ReceiptDetailTopAppBar(onNavigateBack: () -> Unit) {
+    TopAppBar(
+        title = {
+            Text(
+                "Receipt Details",
+                fontWeight = FontWeight.Bold,
+                color = Black
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Black
+                )
+            }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
     )

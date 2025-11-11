@@ -20,10 +20,15 @@ import kotlinx.serialization.json.Json
 
 // --- URL CONSTANT ---
 //CHANGE TO YOUR OWN IP ADDRESS HERE
-private const val API_SERVER_URL = "http://192.168.100.167:8080"
+private const val API_SERVER_URL = "http://192.168.156.164:8080"
 
 
 // --- DATA MODELS ---
+@Serializable
+data class CategoryNetwork(
+    val id: Int,
+    val name: String
+)
 
 @Serializable
 data class MenuApiResponse(
@@ -44,14 +49,17 @@ data class MenuItemNetwork(
     @SerialName("image_url")
     val imageUrl: String? = null,
 
-    val available: Boolean
+    val available: Boolean,
+    val category: CategoryNetwork
 )
 
 data class MenuItemUiModel(
     val id: Int,
     val name: String,
-    val price: String,
-    val fullImageUrl: String?
+    val singlePrice: Double,
+    val doublePrice: Double,
+    val fullImageUrl: String?,
+    val categoryName: String
 )
 
 sealed interface MenuUiState {
@@ -123,8 +131,10 @@ class HomeViewModel : ViewModel() {
                         MenuItemUiModel(
                             id = networkItem.id,
                             name = networkItem.coffeeTitle,
-                            price = "KES ${networkItem.singlePrice}",
-                            fullImageUrl = networkItem.imageUrl
+                            singlePrice = networkItem.singlePrice.toDouble(),
+                            doublePrice = networkItem.doublePrice.toDouble(),
+                            fullImageUrl = networkItem.imageUrl,
+                            categoryName = networkItem.category.name
                         )
                     }
                     _menuUiState.value = MenuUiState.Success(uiModels)

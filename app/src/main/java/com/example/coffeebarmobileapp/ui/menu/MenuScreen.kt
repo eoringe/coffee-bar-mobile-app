@@ -24,12 +24,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.coffeebarmobileapp.ui.home.MenuItemUiModel
+import com.example.coffeebarmobileapp.ui.home.MenuUiState
 import com.example.coffeebarmobileapp.ui.theme.* // Import your colors
 
 // These composables are now public so HomeScreen can see MenuScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MenuScreen() { // This is now just the content
+fun MenuScreen(
+    menuUiState: MenuUiState,
+    onAddItemClick: (item: MenuItemUiModel, size: String) -> Unit
+) { // This is now just the content
 
     val categories = listOf("Classics", "Smoothies", "Winter Warmers", "Summer Coolers", "Signatures")
     var selectedCategory by remember { mutableStateOf(categories[0]) }
@@ -214,5 +219,14 @@ fun MenuSearchBar() {
 @Preview(showBackground = true)
 @Composable
 fun MenuScreenPreview() {
-    MenuScreen()
+    // A fake state for the preview
+    val previewState = MenuUiState.Success(
+        listOf(
+            // --- ADD categoryName TO YOUR FAKE DATA ---
+            MenuItemUiModel(1, "Cappuccino", 250.0, 300.0, null, "Classics"),
+            MenuItemUiModel(2, "Espresso", 200.0, 250.0, null, "Classics"),
+            MenuItemUiModel(3, "Berry Blast", 350.0, 350.0, null, "Smoothies")
+        )
+    )
+    MenuScreen(menuUiState = previewState, onAddItemClick = { _, _ -> })
 }
