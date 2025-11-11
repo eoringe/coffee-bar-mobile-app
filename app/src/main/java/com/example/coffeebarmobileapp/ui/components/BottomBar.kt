@@ -14,9 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.coffeebarmobileapp.ui.theme.*
-import androidx.compose.material.icons.filled.ArrowBack
-import com.example.coffeebarmobileapp.ui.theme.Black
-import com.example.coffeebarmobileapp.ui.theme.White
 
 /**
  * The main Bottom Navigation Bar for the app.
@@ -107,9 +104,6 @@ fun ProfileTopAppBar() {
 }
 
 /**
- * The Top App Bar for the Menu screen.
- */
-/**
  * The Top App Bar for the Menu screen with expandable search.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -183,7 +177,7 @@ fun MenuTopAppBar(
 
 
 
-                        /**
+/**
  * The Top App Bar for the Cart screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -214,7 +208,6 @@ fun ReceiptsTopAppBar() {
         colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
     )
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReceiptDetailTopAppBar(onNavigateBack: () -> Unit) {

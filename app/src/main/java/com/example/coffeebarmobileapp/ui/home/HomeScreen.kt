@@ -57,6 +57,8 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.coffeebarmobileapp.ui.receipts.ReceiptsViewModel
 import com.example.coffeebarmobileapp.ui.components.ReceiptDetailTopAppBar
+import com.example.coffeebarmobileapp.ui.menu.MenuState
+import com.example.coffeebarmobileapp.ui.menu.MenuViewModel
 
 // --- MAIN HOME SCREEN ---
 @Composable
@@ -65,6 +67,7 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = viewModel(),
     authViewModel: AuthViewModel = viewModel(),
     cartViewModel: CartViewModel = viewModel(),
+    menuViewModel: MenuViewModel = viewModel(),
     paymentViewModel: PaymentViewModel = viewModel(),
     receiptsViewModel: ReceiptsViewModel = viewModel()
 ) {
@@ -79,7 +82,7 @@ fun HomeScreen(
         topBar = {
             when (currentRoute) {
                 MainDestinations.HOME -> CoffeeShopTopAppBar()
-                MainDestinations.MENU -> MenuTopAppBar()
+//                MainDestinations.MENU -> MenuTopAppBar()
                 MainDestinations.CART -> CartTopAppBar()
                 MainDestinations.RECEIPTS -> ReceiptsTopAppBar()
                 MainDestinations.PROFILE -> ProfileTopAppBar()
@@ -117,6 +120,7 @@ fun HomeScreen(
             navController = navController,
             homeViewModel = homeViewModel,
             authViewModel = authViewModel,
+            menuViewModel = menuViewModel,
             paymentViewModel = paymentViewModel,
             cartViewModel = cartViewModel,
             receiptsViewModel = receiptsViewModel,
@@ -138,6 +142,7 @@ fun MainNavGraph(
     homeViewModel: HomeViewModel,
     authViewModel: AuthViewModel,
     paymentViewModel: PaymentViewModel,
+    menuViewModel: MenuViewModel,
     receiptsViewModel: ReceiptsViewModel,
     cartViewModel: CartViewModel,
     onNavigateToLogin: () -> Unit,
@@ -161,11 +166,12 @@ fun MainNavGraph(
         // Menu Tab
         composable(MainDestinations.MENU) {
             MenuScreen(
-                menuUiState = homeViewModel.menuUiState.collectAsState().value,
-                onAddItemClick = { item, size ->
-                    cartViewModel.addToCart(item, size)
-                    showSnackbar("Added ${item.name} ($size) to cart")
-                }
+                viewModel = menuViewModel
+//                menuState = menuViewModel.MenuState.collectAsState().value,
+//                onAddItemClick = { item, size ->
+//                    cartViewModel.addToCart(item, size)
+//                    showSnackbar("Added ${item.name} ($size) to cart")
+//                }
             )
         }
 
