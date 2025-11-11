@@ -1,152 +1,152 @@
-//package com.example
-//
-//import com.example.backend.controllers.DarajaController
-//import com.example.backend.controllers.OrderController
-//import com.example.backend.controllers.ReceiptController // <-- CHANGE 1
-//import com.example.backend.controllers.getMenuItems
-//import com.example.backend.models.Categories
-//import com.example.backend.models.MenuItems
-//import com.example.backend.models.OrderItems
-//import com.example.backend.models.Orders
-//import com.example.backend.models.Receipts // <-- CHANGE 1
-//import com.example.backend.services.DarajaService
-//import com.example.backend.services.OrderService
-//import com.example.backend.services.ReceiptService // <-- CHANGE 1
-//import com.example.plugins.configureFirebase
-//import com.example.plugins.firebase
-//import com.example.plugins.verifyFirebaseToken
-//import io.ktor.serialization.jackson.*
-//import io.ktor.server.application.*
-//import io.ktor.server.auth.*
-//import io.ktor.server.engine.*
-//import io.ktor.server.netty.*
-//import io.ktor.server.plugins.contentnegotiation.*
-//import io.ktor.server.response.*
-//import io.ktor.server.routing.*
-//import org.jetbrains.exposed.sql.Database
-//import org.jetbrains.exposed.sql.SchemaUtils
-//import org.jetbrains.exposed.sql.transactions.transaction
-//import java.io.File
-//import java.util.*
-//
-//fun main() {
-//    embeddedServer(Netty, port = 8080, module = Application::module)
-//        .start(wait = true)
-//}
-//
-//fun Application.module() {
-//    // ... (all config loading remains the same) ...
-//    val props = Properties()
-//    val configFile = File("src/main/resources/application.properties")
-//
-//    if (!configFile.exists()) {
-//        throw IllegalStateException("Configuration file not found: ${configFile.absolutePath}")
-//    }
-//
-//    configFile.inputStream().use { props.load(it) }
-//
-//    val dbUrl = props.getProperty("database.url")
-//        ?: throw IllegalStateException("database.url not found in configuration")
-//    val dbDriver = props.getProperty("database.driver")
-//        ?: throw IllegalStateException("database.driver not found in configuration")
-//    val dbUser = props.getProperty("database.user")
-//        ?: throw IllegalStateException("database.user not found in configuration")
-//    val dbPassword = props.getProperty("database.password")
-//        ?: throw IllegalStateException("database.password not found in configuration")
-//
-//    val darajaConsumerKey = props.getProperty("daraja.consumerKey")
-//        ?: throw IllegalStateException("daraja.consumerKey not found in configuration")
-//    val darajaConsumerSecret = props.getProperty("daraja.consumerSecret")
-//        ?: throw IllegalStateException("daraja.consumerSecret not found in configuration")
-//    val darajaPasskey = props.getProperty("daraja.passkey")
-//        ?: throw IllegalStateException("daraja.passkey not found in configuration")
-//    val darajaBusinessShortCode = props.getProperty("daraja.businessShortCode")?.toLongOrNull()
-//        ?: throw IllegalStateException("daraja.businessShortCode not found or invalid in configuration")
-//    val darajaCallbackUrl = props.getProperty("daraja.callbackUrl")
-//        ?: throw IllegalStateException("daraja.callbackUrl not found in configuration")
-//
-//
-//    // ✅ Connect to PostgreSQL
-//    Database.connect(
-//        url = dbUrl,
-//        driver = dbDriver,
-//        user = dbUser,
-//        password = dbPassword
-//    )
-//
-//    transaction {
-//        println("✅ Connected to database successfully!")
-//        // --- CHANGE 2: Add Receipts table to schema creation ---
-//        SchemaUtils.createMissingTablesAndColumns(Categories, MenuItems, Orders, OrderItems, Receipts)
-//    }
-//
-//    // --- CHANGE 3: Instantiate new services/controllers ---
-//    val darajaService = DarajaService(
-//        consumerKey = darajaConsumerKey,
-//        consumerSecret = darajaConsumerSecret,
-//        passkey = darajaPasskey,
-//        businessShortCode = darajaBusinessShortCode,
-//        callbackUrl = darajaCallbackUrl
-//    )
-//    val receiptService = ReceiptService() // <-- ADDED
-//
-//    // --- CHANGE 4: Pass ReceiptService into OrderService ---
-//    val orderService = OrderService(darajaService, receiptService) // <-- MODIFIED
-//
-//    val darajaController = DarajaController(darajaService) { checkoutId, success, receipt ->
-//        println("--- [Application.kt] CALLBACK received via controller lambda ---")
-//        orderService.updateOrderPaymentStatusByCheckoutId(checkoutId, success, receipt)
-//    }
-//    val orderController = OrderController(orderService)
-//    val receiptController = ReceiptController(receiptService) // <-- ADDED
-//
-//
-//    // ✅ Configure JSON serialization
-//    install(ContentNegotiation) {
-//        jackson { }
-//    }
-//
-//    // ✅ Initialize Firebase
-//    configureFirebase()
-//
-//    // ✅ Configure Authentication
-//    install(Authentication) {
-//        firebase("firebase-auth") {
-//            validate { token ->
-//                verifyFirebaseToken(token)
-//            }
-//        }
-//    }
-//
-//    // ✅ ROUTES
-//    routing {
-//        get("/") { call.respond(mapOf("message" to "Coffee Bar API is running!")) }
-//        get("/health") { call.respond(mapOf("status" to "OK")) }
-//        get("/menu-items") { getMenuItems(call) }
-//        post("/daraja/callback") { darajaController.handleCallback(call) }
-//        post("/payments/stk-push") { darajaController.initiateStkPush(call) }
-//
-//        // --- Routes are still public for testing ---
-//
-//        // Order routes
-//        post("/orders") { orderController.createOrder(call) }
-//        get("/orders/{id}") { orderController.getOrder(call) }
-//
-//        // --- CHANGE 5: Add new receipt route ---
-//        get("/orders/{id}/receipt") { receiptController.getReceiptForOrder(call) }
-//
-//        // User profile route
-//        get("/user/profile") {
-//            call.respond(
-//                mapOf(
-//                    "uid" to "DUMMY_UID",
-//                    "email" to "test@example.com",
-//                    "name" to "Test User"
-//                )
-//            )
-//        }
-//    }
-//}
+package com.example
+
+import com.example.backend.controllers.DarajaController
+import com.example.backend.controllers.OrderController
+import com.example.backend.controllers.ReceiptController // <-- CHANGE 1
+import com.example.backend.controllers.getMenuItems
+import com.example.backend.models.Categories
+import com.example.backend.models.MenuItems
+import com.example.backend.models.OrderItems
+import com.example.backend.models.Orders
+import com.example.backend.models.Receipts // <-- CHANGE 1
+import com.example.backend.services.DarajaService
+import com.example.backend.services.OrderService
+import com.example.backend.services.ReceiptService // <-- CHANGE 1
+import com.example.plugins.configureFirebase
+import com.example.plugins.firebase
+import com.example.plugins.verifyFirebaseToken
+import io.ktor.serialization.jackson.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.transactions.transaction
+import java.io.File
+import java.util.*
+
+fun main() {
+    embeddedServer(Netty, port = 8080, module = Application::module)
+        .start(wait = true)
+}
+
+fun Application.module() {
+    // ... (all config loading remains the same) ...
+    val props = Properties()
+    val configFile = File("src/main/resources/application.properties")
+
+    if (!configFile.exists()) {
+        throw IllegalStateException("Configuration file not found: ${configFile.absolutePath}")
+    }
+
+    configFile.inputStream().use { props.load(it) }
+
+    val dbUrl = props.getProperty("database.url")
+        ?: throw IllegalStateException("database.url not found in configuration")
+    val dbDriver = props.getProperty("database.driver")
+        ?: throw IllegalStateException("database.driver not found in configuration")
+    val dbUser = props.getProperty("database.user")
+        ?: throw IllegalStateException("database.user not found in configuration")
+    val dbPassword = props.getProperty("database.password")
+        ?: throw IllegalStateException("database.password not found in configuration")
+
+    val darajaConsumerKey = props.getProperty("daraja.consumerKey")
+        ?: throw IllegalStateException("daraja.consumerKey not found in configuration")
+    val darajaConsumerSecret = props.getProperty("daraja.consumerSecret")
+        ?: throw IllegalStateException("daraja.consumerSecret not found in configuration")
+    val darajaPasskey = props.getProperty("daraja.passkey")
+        ?: throw IllegalStateException("daraja.passkey not found in configuration")
+    val darajaBusinessShortCode = props.getProperty("daraja.businessShortCode")?.toLongOrNull()
+        ?: throw IllegalStateException("daraja.businessShortCode not found or invalid in configuration")
+    val darajaCallbackUrl = props.getProperty("daraja.callbackUrl")
+        ?: throw IllegalStateException("daraja.callbackUrl not found in configuration")
+
+
+    // ✅ Connect to PostgreSQL
+    Database.connect(
+        url = dbUrl,
+        driver = dbDriver,
+        user = dbUser,
+        password = dbPassword
+    )
+
+    transaction {
+        println("✅ Connected to database successfully!")
+        // --- CHANGE 2: Add Receipts table to schema creation ---
+        SchemaUtils.createMissingTablesAndColumns(Categories, MenuItems, Orders, OrderItems, Receipts)
+    }
+
+    // --- CHANGE 3: Instantiate new services/controllers ---
+    val darajaService = DarajaService(
+        consumerKey = darajaConsumerKey,
+        consumerSecret = darajaConsumerSecret,
+        passkey = darajaPasskey,
+        businessShortCode = darajaBusinessShortCode,
+        callbackUrl = darajaCallbackUrl
+    )
+    val receiptService = ReceiptService() // <-- ADDED
+
+    // --- CHANGE 4: Pass ReceiptService into OrderService ---
+    val orderService = OrderService(darajaService, receiptService) // <-- MODIFIED
+
+    val darajaController = DarajaController(darajaService) { checkoutId, success, receipt ->
+        println("--- [Application.kt] CALLBACK received via controller lambda ---")
+        orderService.updateOrderPaymentStatusByCheckoutId(checkoutId, success, receipt)
+    }
+    val orderController = OrderController(orderService)
+    val receiptController = ReceiptController(receiptService) // <-- ADDED
+
+
+    // ✅ Configure JSON serialization
+    install(ContentNegotiation) {
+        jackson { }
+    }
+
+    // ✅ Initialize Firebase
+    configureFirebase()
+
+    // ✅ Configure Authentication
+    install(Authentication) {
+        firebase("firebase-auth") {
+            validate { token ->
+                verifyFirebaseToken(token)
+            }
+        }
+    }
+
+    // ✅ ROUTES
+    routing {
+        get("/") { call.respond(mapOf("message" to "Coffee Bar API is running!")) }
+        get("/health") { call.respond(mapOf("status" to "OK")) }
+        get("/menu-items") { getMenuItems(call) }
+        post("/daraja/callback") { darajaController.handleCallback(call) }
+        post("/payments/stk-push") { darajaController.initiateStkPush(call) }
+
+        // --- Routes are still public for testing ---
+
+        // Order routes
+        post("/orders") { orderController.createOrder(call) }
+        get("/orders/{id}") { orderController.getOrder(call) }
+
+        // --- CHANGE 5: Add new receipt route ---
+        get("/orders/{id}/receipt") { receiptController.getReceiptForOrder(call) }
+
+        // User profile route
+        get("/user/profile") {
+            call.respond(
+                mapOf(
+                    "uid" to "DUMMY_UID",
+                    "email" to "test@example.com",
+                    "name" to "Test User"
+                )
+            )
+        }
+    }
+}
 
 
 
@@ -154,8 +154,8 @@
 
 // ================================THIS WILL BE UNCOMMENTED TO RE ENABLE ROOT PROTECTION =================================/
 
-
- package com.example
+/*
+* package com.example
 
 import com.example.backend.controllers.DarajaController
 import com.example.backend.controllers.OrderController
@@ -297,12 +297,8 @@ fun Application.module() {
             post("/orders") { orderController.createOrder(call) }
             get("/orders/{id}") { orderController.getOrder(call) }
 
-            get("/orders/receipts") {
-                receiptController.getAllReceiptsForUser(call)
-            }
-
             // New Receipt Endpoint
-            get("/orders/{id}/receipt") { receiptController.getReceiptForOrder(call) }
+            get("/orders/{id}/receipt") { receiptController.getReceipt(call) }
 
             // User Profile
             get("/user/profile") {
@@ -318,4 +314,4 @@ fun Application.module() {
             }
         }
     }
-}
+}*/

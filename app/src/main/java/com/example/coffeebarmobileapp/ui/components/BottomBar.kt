@@ -1,10 +1,13 @@
 package com.example.coffeebarmobileapp.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -106,20 +109,81 @@ fun ProfileTopAppBar() {
 /**
  * The Top App Bar for the Menu screen.
  */
+/**
+ * The Top App Bar for the Menu screen with expandable search.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MenuTopAppBar() {
+fun MenuTopAppBar(
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
+    isSearchActive: Boolean = false,
+    onSearchActiveChange: (Boolean) -> Unit = {}
+) {
     TopAppBar(
-        title = { Text("Menu", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
+        title = {
+            if (isSearchActive) {
+                // Show search field when active
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Search menu...", fontSize = 16.sp) },
+                    leadingIcon = {
+                        Icon(Icons.Filled.Search, contentDescription = "Search")
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            onSearchActiveChange(false)
+                            onSearchQueryChange("") // Clear search
+                        }) {
+                            Icon(Icons.Filled.Close, "Close search", tint = CoffeeBrown)
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(30.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = CoffeeBrown,
+                        unfocusedBorderColor = LightBrown
+                    )
+                )
+            } else {
+                // Show normal title
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.LocalCafe,
+                        contentDescription = "Coffee",
+                        modifier = Modifier.size(28.dp),
+                        tint = CoffeeBrown
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Menu",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Black
+                    )
+                }
+            }
+        },
         actions = {
-            Icon(Icons.Filled.NightsStay, contentDescription = "Dark Mode", modifier = Modifier.padding(end = 8.dp))
-            Icon(Icons.Filled.Notifications, contentDescription = "Notifications", modifier = Modifier.padding(end = 8.dp))
+            if (!isSearchActive) {
+                IconButton(onClick = { onSearchActiveChange(true) }) {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = "Search",
+                        tint = CoffeeBrown
+                    )
+                }
+            }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
     )
 }
 
-/**
+
+
+                        /**
  * The Top App Bar for the Cart screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
