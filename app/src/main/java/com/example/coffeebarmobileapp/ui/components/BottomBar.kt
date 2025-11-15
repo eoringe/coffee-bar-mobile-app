@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import com.example.coffeebarmobileapp.ui.home.MainDestinations
 import com.example.coffeebarmobileapp.ui.theme.Black
 import com.example.coffeebarmobileapp.ui.theme.White
+import androidx.compose.foundation.layout.WindowInsets
 
 /**
  * The main Bottom Navigation Bar for the app.
@@ -185,7 +186,8 @@ fun MenuTopAppBar(
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = White),
+        windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
     )
 }
 

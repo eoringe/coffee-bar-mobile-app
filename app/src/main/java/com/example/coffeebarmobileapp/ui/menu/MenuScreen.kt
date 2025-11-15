@@ -25,18 +25,20 @@ import coil.compose.AsyncImage
 import com.example.coffeebarmobileapp.ui.theme.*
 import com.example.coffeebarmobileapp.ui.menu.components.MenuItemCard
 import androidx.compose.foundation.Image
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.zIndex
 import com.example.coffeebarmobileapp.R
 import com.example.coffeebarmobileapp.ui.components.MenuTopAppBar
 import com.example.coffeebarmobileapp.ui.cart.CartViewModel
 import com.example.coffeebarmobileapp.ui.home.MenuItemUiModel
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuScreen(
     viewModel: MenuViewModel = viewModel(),
-    cartViewModel: CartViewModel = viewModel(),  // ← ADD THIS
+    cartViewModel: CartViewModel = viewModel(),
     showSnackbar: (String) -> Unit = {},
     onNavigateToOrder: (itemId: Int, itemName: String, itemPrice: Int) -> Unit = { _, _, _ -> },
     onNavigateToCart: () -> Unit = {},
@@ -46,6 +48,7 @@ fun MenuScreen(
     onSearchActiveChange: (Boolean) -> Unit = {}
 ) {
     val menuState by viewModel.menuState.collectAsState()
+    val isRefreshing = menuState is MenuState.Loading
 
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
@@ -53,7 +56,6 @@ fun MenuScreen(
     val categories = listOf("Hot Coffee", "Latte", "Iced Coffee", "Smoothies", "Signatures")
     var selectedCategory by remember { mutableStateOf(categories[0]) }
 
-    // Category images map
     val categoryImages = mapOf(
         "Hot Coffee" to R.drawable.classics,
         "Latte" to R.drawable.summer,
@@ -62,18 +64,19 @@ fun MenuScreen(
         "Signatures" to R.drawable.signatures
     )
 
-    // Filter items by category
     val displayItems = when (menuState) {
         is MenuState.Success -> {
             (menuState as MenuState.Success).items
                 .filter { it.category.equals(selectedCategory, ignoreCase = true) }
                 .filter {
-                    if (searchQuery. isEmpty()) true
+                    if (searchQuery.isEmpty()) true
                     else it.name.contains(searchQuery, ignoreCase = true)
                 }
         }
         else -> emptyList()
     }
+
+    val pullRefreshState = rememberPullToRefreshState()
 
     Column(
         modifier = Modifier
@@ -86,133 +89,144 @@ fun MenuScreen(
             isSearchActive = isSearchActive,
             onSearchActiveChange = { isSearchActive = it}
         )
-        // Category Image Header
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .clip(RoundedCornerShape(bottomStart = 50.dp, bottomEnd = 50.dp))
-                .background(LightBrown.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
+
+        // refresh
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.fetchMenuItems() },
+            state = pullRefreshState,
+            modifier = Modifier.fillMaxSize()
         ) {
-            AsyncImage(
-                model = categoryImages[selectedCategory],
-                contentDescription = selectedCategory,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        }
-
-        Spacer(Modifier.height(10.dp))
-
-
-
-        Spacer(Modifier.height(10.dp))
-
-        // Category chips
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-        ) {
-            categories.forEach { category ->
-                val isSelected = selectedCategory == category
-
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { selectedCategory = category },
-                    label = {
-                        Text(
-                            category,
-                            color = if (isSelected) White else Black
-                        )
-                    },
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = CoffeeBrown,
-                        containerColor = White
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // image to collapse
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .clip(RoundedCornerShape(bottomStart = 50.dp, bottomEnd = 50.dp))
+                        .background(LightBrown.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = categoryImages[selectedCategory],
+                        contentDescription = selectedCategory,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
-                )
-            }
-        }
+                }
 
-        Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(10.dp))
 
-        // Menu Items List
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .border(
-                    width = 1.dp,
-                    color = CoffeeBrown,
-                    shape = RoundedCornerShape(20.dp)
-                )
-                .background(LightBrown.copy(alpha = 0.3f))
-        ) {
-            when (menuState) {
-                is MenuState.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = CoffeeBrown)
+//                categories
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .zIndex(10f)
+                ) {
+                    categories.forEach { category ->
+                        val isSelected = selectedCategory == category
+
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedCategory = category },
+                            label = {
+                                Text(
+                                    category,
+                                    color = if (isSelected) White else Black
+                                )
+                            },
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = CoffeeBrown,
+                                containerColor = White
+                            )
+                        )
                     }
                 }
-                is MenuState.Error -> {
-                    Text(
-                        text = "Error: ${(menuState as MenuState.Error).message}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
-                is MenuState.Success -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
-                    ) {
-                        if (displayItems.isEmpty()) {
-                            item {
-                                Text(
-                                    text = "No items in this category yet.",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = TextGrey,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 32.dp),
-                                    textAlign = TextAlign.Center
-                                )
+
+                Spacer(Modifier.height(10.dp))
+
+                //scrollable menu items
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .border(
+                            width = 1.dp,
+                            color = CoffeeBrown,
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .background(LightBrown.copy(alpha = 0.3f))
+                ) {
+                    when (menuState) {
+                        is MenuState.Loading -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = CoffeeBrown)
                             }
-                        } else {
-                            items(displayItems) { item ->
-                                MenuItemCard(
-                                    itemName = item.name,
-                                    price = item.singlePrice,
-                                    imageUrl = item.imageUrl,
-                                    onAddToCartClick = {
-                                        val menuItemUiModel = MenuItemUiModel(
-                                            id = item.id,
-                                            name = item.name,
-                                            singlePrice = item.singlePrice.toDouble(),  // Int to Double
-                                            doublePrice = item.doublePrice.toDouble(),  // Int to Double
-                                            fullImageUrl = item.imageUrl,               // imageUrl to fullImageUrl
-                                            categoryName = item.category                // category to categoryName
+                        }
+                        is MenuState.Error -> {
+                            Text(
+                                text = "Error: ${(menuState as MenuState.Error).message}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        is MenuState.Success -> {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            ) {
+                                if (displayItems.isEmpty()) {
+                                    item {
+                                        Text(
+                                            text = "No items in this category yet.",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = TextGrey,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 32.dp),
+                                            textAlign = TextAlign.Center
                                         )
-                                        cartViewModel.addToCart(menuItemUiModel, "single")
-                                        showSnackbar("Added ${item.name} to cart")
                                     }
-                                )
-                                Spacer(Modifier.height(10.dp))
+                                } else {
+                                    items(displayItems) { item ->
+                                        MenuItemCard(
+                                            itemName = item.name,
+                                            price = item.singlePrice,
+                                            imageUrl = item.imageUrl,
+                                            onAddToCartClick = {
+                                                val menuItemUiModel = MenuItemUiModel(
+                                                    id = item.id,
+                                                    name = item.name,
+                                                    singlePrice = item.singlePrice.toDouble(),
+                                                    doublePrice = item.doublePrice.toDouble(),
+                                                    fullImageUrl = item.imageUrl,
+                                                    categoryName = item.category
+                                                )
+                                                cartViewModel.addToCart(menuItemUiModel, "single")
+                                                showSnackbar("Added ${item.name} to cart")
+                                            }
+                                        )
+                                        Spacer(Modifier.height(10.dp))
+                                    }
+                                }
                             }
                         }
                     }
@@ -222,23 +236,6 @@ fun MenuScreen(
     }
 }
 
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//fun MenuSearchBar() {
-//    OutlinedTextField(
-//        value = "",
-//        onValueChange = {},
-//        label = { Text("Search menu...") },
-//        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(horizontal = 16.dp),
-//        shape = RoundedCornerShape(30.dp),
-//        colors = OutlinedTextFieldDefaults.colors(
-//            unfocusedBorderColor = LightBrown
-//        )
-//    )
-//}
 
 @Preview(showBackground = true)
 @Composable
