@@ -28,12 +28,16 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import com.example.coffeebarmobileapp.R
 import com.example.coffeebarmobileapp.ui.components.MenuTopAppBar
+import com.example.coffeebarmobileapp.ui.cart.CartViewModel
+import com.example.coffeebarmobileapp.ui.home.MenuItemUiModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuScreen(
     viewModel: MenuViewModel = viewModel(),
+    cartViewModel: CartViewModel = viewModel(),  // ← ADD THIS
+    showSnackbar: (String) -> Unit = {},
     onNavigateToOrder: (itemId: Int, itemName: String, itemPrice: Int) -> Unit = { _, _, _ -> },
     onNavigateToCart: () -> Unit = {},
     searchQuery: String = "",
@@ -101,8 +105,7 @@ fun MenuScreen(
 
         Spacer(Modifier.height(10.dp))
 
-        // Search bar
-//        MenuSearchBar()
+
 
         Spacer(Modifier.height(10.dp))
 
@@ -196,11 +199,17 @@ fun MenuScreen(
                                     itemName = item.name,
                                     price = item.singlePrice,
                                     imageUrl = item.imageUrl,
-                                    onOrderClick = {
-                                        onNavigateToOrder(item.id, item.name, item.singlePrice)
-                                    },
                                     onAddToCartClick = {
-                                        onNavigateToCart()
+                                        val menuItemUiModel = MenuItemUiModel(
+                                            id = item.id,
+                                            name = item.name,
+                                            singlePrice = item.singlePrice.toDouble(),  // Int to Double
+                                            doublePrice = item.doublePrice.toDouble(),  // Int to Double
+                                            fullImageUrl = item.imageUrl,               // imageUrl to fullImageUrl
+                                            categoryName = item.category                // category to categoryName
+                                        )
+                                        cartViewModel.addToCart(menuItemUiModel, "single")
+                                        showSnackbar("Added ${item.name} to cart")
                                     }
                                 )
                                 Spacer(Modifier.height(10.dp))
