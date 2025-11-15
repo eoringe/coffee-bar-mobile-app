@@ -24,6 +24,7 @@ suspend fun getMenuItems(call: ApplicationCall) {
                     "single_price" to row[MenuItems.singlePrice],
                     "double_price" to row[MenuItems.doublePrice],
                     "available" to row[MenuItems.available],
+                    "special" to row[MenuItems.special],
                     "portion_available" to row[MenuItems.portionAvailable],
                     "image_path" to imagePath,
                     "image_url" to imageUrl,

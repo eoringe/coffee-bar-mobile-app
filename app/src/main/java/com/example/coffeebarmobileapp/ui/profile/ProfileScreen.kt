@@ -60,12 +60,6 @@ fun ProfileScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                "Profile",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Black
-            )
             TextButton(onClick = {
                 isEditing = !isEditing
                 nameFieldState = userName // Reset text if user cancels

@@ -1,11 +1,19 @@
 package com.example.backend.controllers
 
+import com.example.backend.models.Orders
+import com.example.backend.models.Receipts
 import com.example.backend.services.ReceiptService
 import com.example.plugins.FirebaseUser
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.principal
 import io.ktor.server.response.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.transaction
+import javax.swing.SortOrder
 
 class ReceiptController(private val receiptService: ReceiptService) {
 
@@ -29,9 +37,7 @@ class ReceiptController(private val receiptService: ReceiptService) {
         call.respond(HttpStatusCode.OK, receipt)
     }
 
-    /**
-     * Gets a list of all receipts for the logged-in user.
-     */
+    private val objectMapper = jacksonObjectMapper()
     suspend fun getAllReceiptsForUser(call: ApplicationCall) {
         val principal = call.principal<FirebaseUser>()
         val userUid = principal?.uid ?: return call.respond(
@@ -41,7 +47,7 @@ class ReceiptController(private val receiptService: ReceiptService) {
 
         println("--- [ReceiptController] Fetching all receipts for user $userUid ---")
 
-        // This now calls your service, which returns List<Receipt>
+        // 5. This correctly calls the service, which does the database work
         val receipts = receiptService.getReceiptsByUser(userUid)
         call.respond(HttpStatusCode.OK, receipts)
     }

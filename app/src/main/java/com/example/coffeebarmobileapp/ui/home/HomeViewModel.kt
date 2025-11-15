@@ -20,7 +20,7 @@ import kotlinx.serialization.json.Json
 
 // --- URL CONSTANT ---
 //CHANGE TO YOUR OWN IP ADDRESS HERE
-private const val API_SERVER_URL = "http://192.168.156.164:8080"
+private const val API_SERVER_URL = "http://192.168.1.194:8080"
 
 
 // --- DATA MODELS ---
@@ -50,8 +50,9 @@ data class MenuItemNetwork(
     val imageUrl: String? = null,
 
     val available: Boolean,
-    val category: CategoryNetwork
-)
+    val category: CategoryNetwork,
+    val special: Boolean
+    )
 
 data class MenuItemUiModel(
     val id: Int,
@@ -109,10 +110,8 @@ class HomeViewModel : ViewModel() {
     }
 
     init {
-        // --- THIS IS THE FIX (PART 2) ---
         // Start listening for auth changes *as soon as* the ViewModel is created
         auth.addAuthStateListener(authStateListener)
-        // -------------------------------
         fetchMenuItems()
     }
 
@@ -126,7 +125,7 @@ class HomeViewModel : ViewModel() {
 
                 if (apiResponse.success) {
                     val uiModels = apiResponse.data
-                        .filter { networkItem -> networkItem.available }
+                        .filter { networkItem -> networkItem.special }
                         .map { networkItem ->
                         MenuItemUiModel(
                             id = networkItem.id,

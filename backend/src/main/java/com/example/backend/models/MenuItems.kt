@@ -11,5 +11,6 @@ object MenuItems : Table("menu_items") {
     val portionAvailable = integer("portion_available")
     val imagePath = varchar("image_path", 255).nullable()
     val categoryId = reference("category_id", Categories.id)
+    val special = bool("special")
     override val primaryKey = PrimaryKey(id)
 }

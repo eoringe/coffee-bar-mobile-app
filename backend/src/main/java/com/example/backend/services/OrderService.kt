@@ -155,8 +155,7 @@ class OrderService(
                                                                 checkoutRequestId =
                                                                         response.checkoutRequestID,
                                                                 success = true,
-                                                                mpesaReceiptNumber =
-                                                                        "FROM_POLL" // Note: Query
+                                                                mpesaReceiptNumber = null // Note: Query
                                                                 // API doesn't
                                                                 // return
                                                                 // receipt
@@ -259,13 +258,24 @@ class OrderService(
                     }
                 }
 
-                // If payment was successful, reduce portions
+                // If payment was successful, generate receipt and reduce portions
                 if (success) {
+
+                    // --- THIS IS THE FIX ---
+                    // Try to generate the receipt
+                    try {
+                        receiptService?.generateReceiptForOrder(order[Orders.id])
+                        println("✅ [OrderService] Receipt generation initiated for order ${order[Orders.id]}")
+                    } catch (e: Exception) {
+                        println("❌ CRITICAL: Failed to generate receipt for order ${order[Orders.id]}: ${e.message}")
+                    }
+                    // -----------------------
+
                     reducePortionsForOrder(order[Orders.id])
                 }
             } else {
                 println(
-                        "ℹ️ [OrderService] Order ${order[Orders.id]} already processed. Ignoring duplicate update."
+                    "ℹ️ [OrderService] Order ${order[Orders.id]} already processed. Ignoring duplicate update."
                 )
             }
         }

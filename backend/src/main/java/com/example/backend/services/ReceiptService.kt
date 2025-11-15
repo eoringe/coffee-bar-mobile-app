@@ -102,21 +102,14 @@
 //    }
 //}
 
+
 package com.example.backend.services
 
-// --- 1. ADD ALL THESE IMPORTS ---
-import com.example.backend.models.Receipt
-import com.example.backend.models.ReceiptItem
+import com.example.backend.models.*
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.innerJoin
-// -----------------------------
-
-import com.example.backend.models.MenuItems
-import com.example.backend.models.OrderItems
-import com.example.backend.models.Orders
-import com.example.backend.models.Receipts
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -136,11 +129,10 @@ class ReceiptService {
 
         val order = Orders.select { Orders.id eq orderId }.single()
 
-        // --- 2. Map to ReceiptItem data class ---
         val orderItems = (OrderItems innerJoin MenuItems)
             .select { OrderItems.orderId eq orderId }
             .map {
-                ReceiptItem( // <-- This is now resolved
+                ReceiptItem(
                     itemName = it[MenuItems.coffeeTitle],
                     size = it[OrderItems.size],
                     quantity = it[OrderItems.quantity],
@@ -152,8 +144,7 @@ class ReceiptService {
         val totalAmount = order[Orders.totalAmount].toDouble()
         val subtotal = totalAmount
 
-        // --- 3. Build the Receipt data class ---
-        val receipt = Receipt( // <-- This is now resolved
+        val receipt = Receipt(
             receiptNumber = "RCPT-${orderId.toString().padStart(6, '0')}",
             orderId = orderId,
             paymentDate = order[Orders.createdAt].toString(),
@@ -178,24 +169,26 @@ class ReceiptService {
         println("--- [ReceiptService] Successfully saved receipt for order $orderId. ---")
     }
 
-    fun getReceiptByOrderId(orderId: Int): Receipt? { // <-- 4. Return the data class
+    fun getReceiptByOrderId(orderId: Int): Receipt? {
         return transaction {
             val receiptRow = Receipts.select { Receipts.orderId eq orderId }.singleOrNull()
                 ?: return@transaction null
-
             val receiptDataJson = receiptRow[Receipts.receiptData]
-            objectMapper.readValue<Receipt>(receiptDataJson) // <-- 5. Deserialize to data class
+            objectMapper.readValue<Receipt>(receiptDataJson)
         }
     }
 
-    fun getReceiptsByUser(userUid: String): List<Receipt> { // <-- 6. Return List<Receipt>
+    /**
+     * Fetches all receipts for a given user.
+     */
+    fun getReceiptsByUser(userUid: String): List<Receipt> {
         return transaction {
             (Receipts innerJoin Orders)
                 .select { Orders.userUid eq userUid }
                 .orderBy(Receipts.createdAt, SortOrder.DESC)
                 .map { receiptRow ->
                     val receiptDataJson = receiptRow[Receipts.receiptData]
-                    objectMapper.readValue<Receipt>(receiptDataJson) // <-- 7. Deserialize to data class
+                    objectMapper.readValue<Receipt>(receiptDataJson)
                 }
         }
     }
