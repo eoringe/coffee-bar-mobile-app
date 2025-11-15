@@ -122,6 +122,7 @@ class HomeViewModel : ViewModel() {
                 if (apiResponse.success) {
                     val uiModels = apiResponse.data
                         .filter { networkItem -> networkItem.special }
+                        .filter { networkItem -> networkItem.available }
                         .map { networkItem ->
                         MenuItemUiModel(
                             id = networkItem.id,
