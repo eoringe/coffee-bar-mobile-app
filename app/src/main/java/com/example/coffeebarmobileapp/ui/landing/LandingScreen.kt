@@ -43,7 +43,7 @@ fun LandingScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 1.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 

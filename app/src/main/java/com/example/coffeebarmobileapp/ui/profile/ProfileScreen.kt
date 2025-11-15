@@ -21,37 +21,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.coffeebarmobileapp.ui.components.ProfileTopAppBar
 import com.example.coffeebarmobileapp.ui.theme.*
 
-/**
- * This is the TopAppBar for the Profile screen.
- * It has a centered logo and icons on the right.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProfileTopAppBar() {
-    TopAppBar(
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "Coffee Bar",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Black
-                )
-                Icon(
-                    imageVector = Icons.Filled.LocalCafe,
-                    contentDescription = "Logo",
-                    modifier = Modifier.size(30.dp),
-                    tint = CoffeeBrown
-                )
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
-    )
-}
 
 /**
  * This is the main Profile screen content.
@@ -62,7 +34,6 @@ fun ProfileScreen(
     userEmail: String,
     isLoading: Boolean,
     onLogoutClick: () -> Unit,
-    onChangePasswordClick: () -> Unit,
     onSaveName: (newName: String, onSaveComplete: () -> Unit) -> Unit
 ) {
     var isEditing by remember { mutableStateOf(false) }
@@ -256,7 +227,6 @@ private fun ProfileScreenPreview() {
                 userEmail = "gift@strathmore.edu",
                 isLoading = false,
                 onLogoutClick = {},
-                onChangePasswordClick = {},
                 onSaveName = { _, _ -> }            )
         }
     }

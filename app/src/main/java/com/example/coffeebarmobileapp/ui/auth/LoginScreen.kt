@@ -46,7 +46,7 @@ fun LoginScreen(
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
-    val imageHeight = screenHeight * 0.35f // 35% of screen height
+    val imageHeight = screenHeight * 0.35f // 35% of screen heigh
 
     val TAG = "LoginScreen"
 
@@ -99,16 +99,20 @@ fun LoginScreen(
     }
 
     // UI
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFE6D3C7))
     ) {
+        val screenWidth = maxWidth
+
+        val imageHeight = screenHeight * 0.35f
+        val cornerRadius = screenWidth * 0.45f
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(0.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top image
@@ -143,7 +147,9 @@ fun LoginScreen(
                 label = { Text("Email") },
                 singleLine = true,
                 enabled = !state.isLoading,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal=30.dp),
                 colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
             )
 
@@ -156,7 +162,9 @@ fun LoginScreen(
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 enabled = !state.isLoading,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 30.dp),
                 colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
             )
 
@@ -170,7 +178,7 @@ fun LoginScreen(
                 enabled = !state.isLoading && email.isNotBlank() && password.isNotBlank(),
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
-                    .height(50.dp),
+                    .heightIn(min = 48.dp, max = 56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3A322C)),
                 shape = RoundedCornerShape(28.dp)
             ) {
@@ -194,7 +202,7 @@ fun LoginScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
-                    .height(50.dp),
+                    .heightIn(min = 48.dp, max = 56.dp),
                 enabled = !state.isLoading,
                 shape = RoundedCornerShape(28.dp)
             ) {

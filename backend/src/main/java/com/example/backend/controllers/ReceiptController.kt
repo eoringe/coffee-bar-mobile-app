@@ -1,8 +1,10 @@
 package com.example.backend.controllers
 
 import com.example.backend.services.ReceiptService
+import com.example.plugins.FirebaseUser
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.principal
 import io.ktor.server.response.*
 
 class ReceiptController(private val receiptService: ReceiptService) {
@@ -25,5 +27,22 @@ class ReceiptController(private val receiptService: ReceiptService) {
         }
 
         call.respond(HttpStatusCode.OK, receipt)
+    }
+
+    /**
+     * Gets a list of all receipts for the logged-in user.
+     */
+    suspend fun getAllReceiptsForUser(call: ApplicationCall) {
+        val principal = call.principal<FirebaseUser>()
+        val userUid = principal?.uid ?: return call.respond(
+            HttpStatusCode.Unauthorized,
+            mapOf("error" to "Not authenticated")
+        )
+
+        println("--- [ReceiptController] Fetching all receipts for user $userUid ---")
+
+        // This now calls your service, which returns List<Receipt>
+        val receipts = receiptService.getReceiptsByUser(userUid)
+        call.respond(HttpStatusCode.OK, receipts)
     }
 }
