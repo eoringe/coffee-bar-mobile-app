@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
+import com.example.coffeebarmobileapp.ui.variable.SERVER_URL
 
 // --- UI State for the LIST ---
 sealed interface ReceiptsUiState {
@@ -44,8 +45,6 @@ class ReceiptsViewModel : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
 
-    // TODO: Make sure this IP is correct
-    private val API_URL = "http://192.168.1.194:8080"
 
     private val client = HttpClient(Android) {
         install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
@@ -72,7 +71,7 @@ class ReceiptsViewModel : ViewModel() {
             _uiState.value = ReceiptsUiState.Loading
             try {
                 // This call requires the backend to be fixed
-                val receipts = client.get("$API_URL/orders/receipts").body<List<Receipt>>()
+                val receipts = client.get("$SERVER_URL/orders/receipts").body<List<Receipt>>()
                 _uiState.value = ReceiptsUiState.Success(receipts)
             } catch (e: Exception) {
                 Log.e("ReceiptsViewModel", "Failed to fetch receipts", e)
@@ -88,7 +87,7 @@ class ReceiptsViewModel : ViewModel() {
         viewModelScope.launch {
             _selectedReceiptState.value = ReceiptDetailUiState.Loading
             try {
-                val receipt = client.get("$API_URL/orders/$orderId/receipt").body<Receipt>()
+                val receipt = client.get("$SERVER_URL/orders/$orderId/receipt").body<Receipt>()
                 _selectedReceiptState.value = ReceiptDetailUiState.Success(receipt)
             } catch (e: Exception) {
                 Log.e("ReceiptsViewModel", "Failed to fetch receipt $orderId", e)

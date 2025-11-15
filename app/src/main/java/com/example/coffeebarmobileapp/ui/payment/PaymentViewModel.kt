@@ -21,6 +21,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import com.example.coffeebarmobileapp.ui.variable.SERVER_URL
 
 
 // --- DATA CLASSES FOR PAYMENT ---
@@ -93,8 +94,6 @@ class PaymentViewModel : ViewModel() {
         }
     }
 
-    // TODO: Update with your server IP
-    private val API_URL = "http://192.168.1.194:8080"
 
     fun startPayment(cartViewModel: CartViewModel, phoneNumber: String) {
         viewModelScope.launch {
@@ -103,7 +102,7 @@ class PaymentViewModel : ViewModel() {
             val requestBody = OrderRequest(items = orderDetails, phoneNumber = phoneNumber)
 
             try {
-                val response = client.post("$API_URL/orders") {
+                val response = client.post("$SERVER_URL/orders") {
                     contentType(ContentType.Application.Json)
                     setBody(requestBody)
                 }

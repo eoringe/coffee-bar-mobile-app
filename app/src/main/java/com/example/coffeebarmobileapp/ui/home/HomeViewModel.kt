@@ -17,11 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-
-// --- URL CONSTANT ---
-//CHANGE TO YOUR OWN IP ADDRESS HERE
-private const val API_SERVER_URL = "http://192.168.1.194:8080"
-
+import com.example.coffeebarmobileapp.ui.variable.SERVER_URL
 
 // --- DATA MODELS ---
 @Serializable
@@ -119,7 +115,7 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             _menuUiState.value = MenuUiState.Loading
             try {
-                val url = "$API_SERVER_URL/menu-items"
+                val url = "$SERVER_URL/menu-items"
 
                 val apiResponse = client.get(url).body<MenuApiResponse>()
 
