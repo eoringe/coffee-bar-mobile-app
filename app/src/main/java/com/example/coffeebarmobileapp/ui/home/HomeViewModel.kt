@@ -20,7 +20,8 @@ import kotlinx.serialization.json.Json
 
 // --- URL CONSTANT ---
 //CHANGE TO YOUR OWN IP ADDRESS HERE
-private const val API_SERVER_URL = "http://192.168.156.164:8080"
+//private const val API_SERVER_URL = "http://192.168.156.164:8080"
+private const val API_SERVER_URL = "http://10.0.2.2:8080"
 
 
 // --- DATA MODELS ---

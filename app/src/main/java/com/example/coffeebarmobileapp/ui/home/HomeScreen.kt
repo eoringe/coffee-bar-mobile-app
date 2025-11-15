@@ -166,12 +166,9 @@ fun MainNavGraph(
         // Menu Tab
         composable(MainDestinations.MENU) {
             MenuScreen(
-                viewModel = menuViewModel
-//                menuState = menuViewModel.MenuState.collectAsState().value,
-//                onAddItemClick = { item, size ->
-//                    cartViewModel.addToCart(item, size)
-//                    showSnackbar("Added ${item.name} ($size) to cart")
-//                }
+                viewModel = menuViewModel,
+                cartViewModel = cartViewModel,
+                showSnackbar= showSnackbar
             )
         }
 

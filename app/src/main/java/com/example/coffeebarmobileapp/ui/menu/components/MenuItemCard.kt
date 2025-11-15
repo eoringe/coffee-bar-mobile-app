@@ -2,9 +2,12 @@ package com.example.coffeebarmobileapp.ui.menu.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -22,7 +25,7 @@ fun MenuItemCard(
     itemName: String,
     price: Int,
     imageUrl: String? = null,
-    onOrderClick: () -> Unit = {}, // Callback for Order button
+//    onOrderClick: () -> Unit = {}, // Callback for Order button
     onAddToCartClick: () -> Unit = {} // Callback for Add to Cart button
 ) {
     Box(
@@ -77,12 +80,16 @@ fun MenuItemCard(
             Spacer(Modifier.width(12.dp))
 
             // Text and buttons column
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.SpaceBetween
+            // Text and plus button row
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 // Item name and price
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         itemName,
                         style = MaterialTheme.typography.titleMedium,
@@ -95,47 +102,26 @@ fun MenuItemCard(
                     )
                 }
 
-                Spacer(Modifier.height(8.dp))
-
-                // Buttons row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // PLUS BUTTON on the right
+                Box(
+                    modifier = Modifier
+                        .size(35.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF6F4E37))
+                        .clickable(onClick = onAddToCartClick),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Add to Cart button (outlined style)
-                    OutlinedButton(
-                        onClick = onAddToCartClick,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF6F4E37)
-                        ),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(
-                            width = 1.dp
-                        )
-                    ) {
-                        Icon(
-                            Icons.Filled.ShoppingCart,
-                            contentDescription = "Add to cart",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text("Cart", style = MaterialTheme.typography.bodySmall)
-                    }
-
-                    // Order button (filled style)
-                    Button(
-                        onClick = onOrderClick,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6F4E37)
-                        )
-                    ) {
-                        Text("Order", color = Color.White)
-                    }
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = "Add to cart",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
+
+        }
+
         }
     }
-}
+

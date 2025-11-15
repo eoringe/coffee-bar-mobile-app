@@ -14,6 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.coffeebarmobileapp.ui.theme.*
+import androidx.compose.foundation.layout.WindowInsets
+
 
 /**
  * The main Bottom Navigation Bar for the app.
@@ -171,7 +173,8 @@ fun MenuTopAppBar(
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = White),
+        windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
     )
 }
 

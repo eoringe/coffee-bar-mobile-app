@@ -17,8 +17,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-//private const val API_SERVER_URL = "http://10.0.2.2:8080"
-private const val API_SERVER_URL = "http://192.168.156.164:8080"
+private const val API_SERVER_URL = "http://10.0.2.2:8080"
+//private const val API_SERVER_URL = "http://192.168.156.164:8080"
 
 @Serializable
 data class MenuItemNetwork(
