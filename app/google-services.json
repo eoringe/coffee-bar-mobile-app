@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "285872124510-3051v24st5l998h7u3aiiubfe7ielche.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.coffeebarmobileapp",
+            "certificate_hash": "251351fa4a588b7c0473564fb57152684014b277"
+          }
+        },
+        {
           "client_id": "285872124510-q1vchep70icnt4q62s4sfudpc08lmj7t.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
