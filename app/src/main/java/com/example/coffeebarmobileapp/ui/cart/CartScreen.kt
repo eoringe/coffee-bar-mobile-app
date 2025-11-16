@@ -1,7 +1,7 @@
 package com.example.coffeebarmobileapp.ui.cart
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,13 +18,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.coffeebarmobileapp.ui.theme.*
+import java.util.Locale
 
 @Composable
 fun CartScreen(
@@ -36,7 +39,7 @@ fun CartScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         if (uiState.items.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Your cart is empty.", style = MaterialTheme.typography.headlineSmall)
+                Text("Your cart is empty.", style = MaterialTheme.typography.headlineSmall, color = CoffeeBrown)
             }
         } else {
             LazyColumn(
@@ -53,12 +56,15 @@ fun CartScreen(
                         onQuantityChange = { change ->
                             viewModel.updateQuantity(cartItem.item.id, cartItem.selectedSize, change)
                         },
+                        // --- NEW ---
                         onSizeChange = { newSize ->
                             viewModel.updateItemSize(cartItem.item.id, cartItem.selectedSize, newSize)
                         }
                     )
                 }
             }
+
+            // --- Subtotal Box ---
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -72,16 +78,9 @@ fun CartScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Sub Total", fontSize = 18.sp, color = TextGrey)
-                        Text("KES ${uiState.subtotal.toInt()}", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("TOTAL", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("KES ${uiState.subtotal.toInt()}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("TOTAL", fontSize = 20.sp, color = Black, fontWeight = FontWeight.Bold)
+
+                        Text("KES ${uiState.subtotal.toInt()}", fontSize = 20.sp, color = CoffeeBrown, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
@@ -90,7 +89,7 @@ fun CartScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = CoffeeBrown),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("CHECKOUT", modifier = Modifier.padding(8.dp))
+                        Text("CHECKOUT", modifier = Modifier.padding(8.dp), color = White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -126,15 +125,10 @@ fun CartItemCard(
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(cartItem.item.name, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(cartItem.item.name, fontSize = 18.sp, color = TextGrey, fontWeight = FontWeight.Bold)
             Text("KES ${price.toInt()}", fontSize = 16.sp, color = TextGrey)
-            Text(
-                "Natural chilled caffeine-free blend",
-                fontSize = 12.sp,
-                color = TextGrey,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+
+            // --- NEW SIZE SELECTOR ---
             SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(top = 8.dp)) {
                 SegmentedButton(
                     shape = RoundedCornerShape(topStartPercent = 50, bottomStartPercent = 50),
@@ -143,7 +137,8 @@ fun CartItemCard(
                     colors = SegmentedButtonDefaults.colors(
                         activeContainerColor = CoffeeBrown,
                         activeContentColor = White,
-                        inactiveContainerColor = LightBrown
+                        inactiveContainerColor = LightBrown,
+                        inactiveContentColor = Black
                     )
                 ) {
                     Text("Single", fontSize = 12.sp)
@@ -155,24 +150,31 @@ fun CartItemCard(
                     colors = SegmentedButtonDefaults.colors(
                         activeContainerColor = CoffeeBrown,
                         activeContentColor = White,
-                        inactiveContainerColor = LightBrown
+                        inactiveContainerColor = LightBrown,
+                        inactiveContentColor = Black
                     )
                 ) {
                     Text("Double", fontSize = 12.sp)
                 }
             }
+            // --- END NEW SIZE SELECTOR ---
+
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .border(1.dp, LightBrown, RoundedCornerShape(20.dp))
+                    .border(1.dp, TextGrey, RoundedCornerShape(20.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 IconButton(onClick = { onQuantityChange(-1) }, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = CoffeeBrown)
                 }
-                Text(cartItem.quantity.toString(), fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
+                Text(cartItem.quantity.toString(),
+                    fontSize = 16.sp,
+                    color = TextGrey,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 8.dp))
                 IconButton(onClick = { onQuantityChange(1) }, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.Default.Add, contentDescription = "Increase", tint = CoffeeBrown)
                 }

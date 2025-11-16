@@ -36,8 +36,6 @@ fun PaymentScreen(
     val cartState by cartViewModel.uiState.collectAsState()
     val paymentState by paymentViewModel.uiState.collectAsState()
 
-    val isLoading = paymentState is PaymentUiState.Loading
-
     var selectedOption by remember { mutableStateOf("primary") }
     var phoneNumber by remember { mutableStateOf("") }
 
@@ -47,9 +45,6 @@ fun PaymentScreen(
 
     val total = cartState.subtotal
 
-    LaunchedEffect(Unit) {
-        paymentViewModel.resetPaymentState()
-    }
 
     // This block observes the payment state
     LaunchedEffect(paymentState) {
@@ -112,18 +107,37 @@ fun PaymentScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Enter Phone Number")
             }
-            OutlinedTextField(
-                value = phoneNumber,
-                onValueChange = { phoneNumber = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp),
-                placeholder = { Text("e.g. 0722333444") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                singleLine = true,
-                enabled = !isLoading,
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = CoffeeBrown, unfocusedBorderColor = LightBrown, focusedTextColor = TextGrey)
-            )
+            if (paymentState is PaymentUiState.Loading){
+                OutlinedTextField(
+                    value = phoneNumber,
+                    onValueChange = { phoneNumber = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = CoffeeBrown,
+                        unfocusedBorderColor = CoffeeBrown,
+                        focusedTextColor = CoffeeBrown
+                    )
+                )
+            }else {
+                OutlinedTextField(
+                    value = phoneNumber,
+                    onValueChange = { phoneNumber = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp),
+                    placeholder = { Text("e.g. 0722333444") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = CoffeeBrown,
+                        unfocusedBorderColor = LightBrown,
+                        focusedTextColor = TextGrey
+                    )
+                )
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -278,7 +292,6 @@ private fun ErrorPaymentDialog(error: String, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.Warning, contentDescription = "Error", tint = Red) },
         title = { Text("Payment Failed") },
-        text = { Text(error) },
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text("Try Again")

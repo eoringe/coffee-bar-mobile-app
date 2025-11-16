@@ -76,13 +76,3 @@ fun NavGraph(navController: NavHostController) {
         }
     }
 }
-
-@Composable
-fun HomeScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text("Welcome to Coffee Bar!")
-    }
-}

@@ -16,9 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-
-private const val API_SERVER_URL = "http://10.0.2.2:8080"
-//private const val API_SERVER_URL = "http://192.168.156.164:8080"
+import com.example.coffeebarmobileapp.ui.variable.SERVER_URL
 
 @Serializable
 data class MenuItemNetwork(
@@ -85,7 +83,7 @@ class MenuViewModel : ViewModel() {
         viewModelScope.launch {
             _menuState.value = MenuState.Loading
             try {
-                val url = "$API_SERVER_URL/menu-items"
+                val url = "$SERVER_URL/menu-items"
                 val apiResponse = client.get(url).body<MenuApiResponse>()
 
                 if (apiResponse.success) {

@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.coffeebarmobileapp.ui.cart.CartViewModel
-import com.google.android.gms.auth.api.Auth
 import com.google.firebase.auth.FirebaseAuth
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -22,6 +21,8 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import com.example.coffeebarmobileapp.ui.variable.SERVER_URL
+
 
 // --- DATA CLASSES FOR PAYMENT ---
 @Serializable
@@ -38,7 +39,7 @@ data class OrderRequest(
 
 @Serializable
 data class OrderResponse(
-    val status: String,
+    val status: String, // "PAID", "PENDING_PAYMENT", "FAILED"
     val orderId: Int? = null,
     val message: String
 )
@@ -56,7 +57,7 @@ data class ReceiptItem(
 data class Receipt(
     val receiptNumber: String,
     val orderId: Int,
-    val paymentDate: String,
+    val paymentDate: String, // This is a full timestamp
     val mpesaReceiptNumber: String? = null,
     val customerPhoneNumber: String,
     val items: List<ReceiptItem>,
@@ -69,6 +70,7 @@ sealed interface PaymentUiState {
     object Idle : PaymentUiState
     object Loading : PaymentUiState
     data class Success(val orderId: Int) : PaymentUiState
+//    data class Success(val receipt: Receipt) : PaymentUiState
     object Pending : PaymentUiState
     data class Failed(val error: String) : PaymentUiState
 }
@@ -80,7 +82,7 @@ class PaymentViewModel : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val client = HttpClient(Android) {
         install(ContentNegotiation) { json(Json {
-            ignoreUnknownKeys = true
+            ignoreUnknownKeys = true // <-- This is the fix
         }) }
         install(Auth) {
             bearer {
@@ -92,7 +94,6 @@ class PaymentViewModel : ViewModel() {
         }
     }
 
-    private val API_URL = "http://192.168.156.164:8080" // <-- !! CHECK YOUR IP !!
 
     fun startPayment(cartViewModel: CartViewModel, phoneNumber: String) {
         viewModelScope.launch {
@@ -101,22 +102,27 @@ class PaymentViewModel : ViewModel() {
             val requestBody = OrderRequest(items = orderDetails, phoneNumber = phoneNumber)
 
             try {
-                val response = client.post("$API_URL/orders") {
+                val response = client.post("$SERVER_URL/orders") {
                     contentType(ContentType.Application.Json)
                     setBody(requestBody)
                 }
 
                 val orderResponse = response.body<OrderResponse>()
 
+                // This logic directly matches your order lifecycle
                 when (response.status) {
-                    HttpStatusCode.Created -> {
+                    HttpStatusCode.Created -> { // Scenario A: Success
+                        // JUST SAVE THE ID
                         _uiState.value = PaymentUiState.Success(orderResponse.orderId!!)
                         cartViewModel.clearCart()
                     }
-                    HttpStatusCode.Accepted -> {
+                    HttpStatusCode.Accepted -> { // Scenario B: Pending
+                        // Server timed out, status is PENDING_PAYMENT
                         _uiState.value = PaymentUiState.Pending
+                        cartViewModel.clearCart()
                     }
-                    HttpStatusCode.OK -> {
+                    HttpStatusCode.OK -> { // Scenario C: Failed
+                        // User cancelled, status is FAILED
                         _uiState.value = PaymentUiState.Failed(orderResponse.message)
                     }
                     else -> {
@@ -128,12 +134,6 @@ class PaymentViewModel : ViewModel() {
                 _uiState.value = PaymentUiState.Failed(e.message ?: "Unknown error")
             }
         }
-    }
-
-    private suspend fun getReceipt(orderId: Int): Receipt {
-        // This makes a new network call to get the receipt details
-        Log.d("PaymentViewModel", "Fetching receipt for order $orderId")
-        return client.get("$API_URL/orders/$orderId/receipt").body()
     }
 
     fun resetPaymentState() {

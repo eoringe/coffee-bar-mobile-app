@@ -57,8 +57,11 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.coffeebarmobileapp.ui.receipts.ReceiptsViewModel
 import com.example.coffeebarmobileapp.ui.components.ReceiptDetailTopAppBar
+import com.example.coffeebarmobileapp.ui.components.CoffeeShopBottomNavigation
 import com.example.coffeebarmobileapp.ui.menu.MenuState
 import com.example.coffeebarmobileapp.ui.menu.MenuViewModel
+
+private const val TAG = "CheckoutFlow"
 
 // --- MAIN HOME SCREEN ---
 @Composable
@@ -85,6 +88,11 @@ fun HomeScreen(
 //                MainDestinations.MENU -> MenuTopAppBar()
                 MainDestinations.CART -> CartTopAppBar()
                 MainDestinations.RECEIPTS -> ReceiptsTopAppBar()
+                MainDestinations.RECEIPT_DETAIL -> {
+                    ReceiptDetailTopAppBar(
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
                 MainDestinations.PROFILE -> ProfileTopAppBar()
                 else -> {}
             }
@@ -239,9 +247,8 @@ fun MainNavGraph(
 
             PaymentSuccessScreen(
                 onNavigateToReceipt = {
-                    // --- 4. FIX: Reset VM state HERE ---
-                    paymentViewModel.resetPaymentState()
                     if (orderId != null) {
+                        paymentViewModel.resetPaymentState()
                         // --- 2. FIX: Navigate to the correct route ---
                         navController.navigate("${MainDestinations.RECEIPT_DETAIL_ROUTE}/$orderId?success=true") {
                             popUpTo(MainDestinations.PAYMENT_SUCCESS) { inclusive = true }
@@ -270,8 +277,7 @@ fun MainNavGraph(
             if (orderId != null) {
                 ReceiptDetailScreen(
                     orderId = orderId,
-                    viewModel = receiptsViewModel,
-                    showSuccessBanner = showSuccess ?: false
+                    viewModel = receiptsViewModel
                 )
             } else {
                 Text("Error: Order ID missing.")
@@ -295,39 +301,6 @@ object MainDestinations {
     const val RECEIPT_DETAIL = "receipt_detail/{orderId}?success={success}"
 }
 
-// --- UPDATED BOTTOM NAVIGATION ---
-@Composable
-private fun CoffeeShopBottomNavigation(
-    currentRoute: String?,
-    onItemSelected: (String) -> Unit
-) {
-    val items = listOf(
-        MainDestinations.HOME to (Icons.Filled.Home to "Home"),
-        MainDestinations.MENU to (Icons.Filled.Menu to "Menu"),
-        MainDestinations.CART to (Icons.Filled.ShoppingCart to "Cart"),
-        MainDestinations.RECEIPTS to (Icons.Filled.Receipt to "Receipts"),
-        MainDestinations.PROFILE to (Icons.Filled.Person to "Profile")
-    )
-
-    NavigationBar(containerColor = White) {
-        items.forEach { (route, details) ->
-            val (icon, label) = details
-            NavigationBarItem(
-                icon = { Icon(icon, contentDescription = label) },
-                label = { Text(label) },
-                selected = currentRoute == route,
-                onClick = { onItemSelected(route) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = CoffeeBrown,
-                    selectedTextColor = CoffeeBrown,
-                    indicatorColor = LightBrown,
-                    unselectedIconColor = TextGrey,
-                    unselectedTextColor = TextGrey
-                )
-            )
-        }
-    }
-}
 
 // --- HOME SCREEN CONTENT (for the "Home" tab) ---
 @OptIn(ExperimentalMaterial3Api::class)
@@ -412,17 +385,10 @@ private fun TodaySpecialSection(
         Spacer(modifier = Modifier.height(16.dp))
 
         when (menuUiState) {
-            is MenuUiState.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                        .size(50.dp),
-                    color = CoffeeBrown,
-                    strokeWidth = 4.dp
-                )
-            }
+            is MenuUiState.Loading -> {}
             is MenuUiState.Error -> {
                 Text(
-                    text = "Failed to load items. Please try again later.",
+                    text = "No specials at the moment. Please try again later.",
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()

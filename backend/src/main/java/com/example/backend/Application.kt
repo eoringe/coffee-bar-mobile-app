@@ -4,11 +4,7 @@ import com.example.backend.controllers.DarajaController
 import com.example.backend.controllers.OrderController
 import com.example.backend.controllers.ReceiptController
 import com.example.backend.controllers.getMenuItems
-import com.example.backend.models.Categories
-import com.example.backend.models.MenuItems
-import com.example.backend.models.OrderItems
-import com.example.backend.models.Orders
-import com.example.backend.models.Receipts
+import com.example.backend.models.*
 import com.example.backend.services.DarajaService
 import com.example.backend.services.OrderService
 import com.example.backend.services.ReceiptService
@@ -35,13 +31,16 @@ fun main() {
         .start(wait = true)
 }
 
+@Suppress("unused")
 fun Application.module() {
-    // --- All your config loading (DB, Daraja) goes here ---
-    // (Omitted for brevity, no changes)
+
+    // --- KOIN (inject, module, install) IS GONE ---
+
+    // --- 1. CONFIG LOADING ---
     val props = Properties()
     val configFile = File("src/main/resources/application.properties")
     configFile.inputStream().use { props.load(it) }
-    // (Load all properties...)
+
     val dbUrl = props.getProperty("database.url")
     val dbDriver = props.getProperty("database.driver")
     val dbUser = props.getProperty("database.user")
@@ -51,8 +50,10 @@ fun Application.module() {
     val darajaPasskey = props.getProperty("daraja.passkey")
     val darajaBusinessShortCode = props.getProperty("daraja.businessShortCode").toLong()
     val darajaCallbackUrl = props.getProperty("daraja.callbackUrl")
+    // This line was missing, add it
+    val ktorHost = props.getProperty("ktor.deployment.host", "0.0.0.0")
 
-    // ✅ Connect to PostgreSQL
+    // --- 2. DATABASE CONNECTION ---
     Database.connect(
         url = dbUrl,
         driver = dbDriver,
@@ -65,7 +66,7 @@ fun Application.module() {
         SchemaUtils.createMissingTablesAndColumns(Categories, MenuItems, Orders, OrderItems, Receipts)
     }
 
-    // ✅ Instantiate Services and Controllers
+    // --- 3. MANUAL INSTANTIATION ---
     val darajaService = DarajaService(
         consumerKey = darajaConsumerKey,
         consumerSecret = darajaConsumerSecret,
@@ -73,33 +74,21 @@ fun Application.module() {
         businessShortCode = darajaBusinessShortCode,
         callbackUrl = darajaCallbackUrl
     )
-    // --- Instantiate new ReceiptService ---
     val receiptService = ReceiptService()
-
-    // --- Inject ReceiptService into OrderService ---
-    val orderService = OrderService(darajaService, receiptService)
+    val orderService = OrderService(darajaService, receiptService) // <-- Pass the real service
 
     val darajaController = DarajaController(darajaService) { checkoutId, success, receipt ->
         println("--- [Application.kt] CALLBACK received via controller lambda ---")
         orderService.updateOrderPaymentStatusByCheckoutId(checkoutId, success, receipt)
     }
     val orderController = OrderController(orderService)
+    val receiptController = ReceiptController(receiptService) // <-- Manually create
 
-    // --- Instantiate new ReceiptController ---
-    val receiptController = ReceiptController(receiptService)
-
-
-    // ✅ Configure JSON serialization
+    // --- 4. PLUGINS ---
     install(ContentNegotiation) {
-        jackson {
-            // Optional: configure jackson mapper
-        }
+        jackson { }
     }
-
-    // ✅ Initialize Firebase
     configureFirebase()
-
-    // ✅ Configure Authentication
     install(Authentication) {
         firebase("firebase-auth") {
             validate { token ->
@@ -108,48 +97,37 @@ fun Application.module() {
         }
     }
 
-    // ✅ ROUTES
+    // --- 5. ROUTING (Corrected) ---
     routing {
-        // 🌍 Public routes
+        // Public routes
         get("/") {
             call.respond(mapOf("message" to "Coffee Bar API is running!"))
         }
-
-        get("/health") {
-            call.respond(mapOf("status" to "OK"))
-        }
-
-        // ☕ Public endpoint for users to view menu
         get("/menu-items") {
             getMenuItems(call)
         }
-
-        // 📞 Public endpoint for Daraja to send callbacks
         post("/daraja/callback") {
             darajaController.handleCallback(call)
         }
 
-        // 💳 Public endpoint to initiate payment FOR TESTING
-        post("/payments/stk-push") {
-            darajaController.initiateStkPush(call)
-        }
-
-        // --- 🔒 PROTECTED ROUTES ARE NOW PUBLIC ---
+        // Authenticated routes
         authenticate("firebase-auth") {
             // Orders
             post("/orders") { orderController.createOrder(call) }
             get("/orders/{id}") { orderController.getOrder(call) }
 
-            // New Receipt Endpoint
-            get("/orders/{id}/receipt") { receiptController.getReceiptForOrder(call) }
-
+            // --- THIS IS THE FIX ---
+            // The specific path MUST come before the wildcard
             get("/orders/receipts") {
                 receiptController.getAllReceiptsForUser(call)
             }
+            get("/orders/{id}/receipt") {
+                receiptController.getReceiptForOrder(call)
+            }
+            // -----------------------------
 
             // User Profile
             get("/user/profile") {
-                // --- MODIFIED: Use the real user principal ---
                 val user = call.principal<FirebaseUser>()
                 call.respond(
                     mapOf(

@@ -17,12 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-
-// --- URL CONSTANT ---
-//CHANGE TO YOUR OWN IP ADDRESS HERE
-//private const val API_SERVER_URL = "http://192.168.156.164:8080"
-private const val API_SERVER_URL = "http://10.0.2.2:8080"
-
+import com.example.coffeebarmobileapp.ui.variable.SERVER_URL
 
 // --- DATA MODELS ---
 @Serializable
@@ -51,8 +46,9 @@ data class MenuItemNetwork(
     val imageUrl: String? = null,
 
     val available: Boolean,
-    val category: CategoryNetwork
-)
+    val category: CategoryNetwork,
+    val special: Boolean
+    )
 
 data class MenuItemUiModel(
     val id: Int,
@@ -110,10 +106,8 @@ class HomeViewModel : ViewModel() {
     }
 
     init {
-        // --- THIS IS THE FIX (PART 2) ---
         // Start listening for auth changes *as soon as* the ViewModel is created
         auth.addAuthStateListener(authStateListener)
-        // -------------------------------
         fetchMenuItems()
     }
 
@@ -121,12 +115,13 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             _menuUiState.value = MenuUiState.Loading
             try {
-                val url = "$API_SERVER_URL/menu-items"
+                val url = "$SERVER_URL/menu-items"
 
                 val apiResponse = client.get(url).body<MenuApiResponse>()
 
                 if (apiResponse.success) {
                     val uiModels = apiResponse.data
+                        .filter { networkItem -> networkItem.special }
                         .filter { networkItem -> networkItem.available }
                         .map { networkItem ->
                         MenuItemUiModel(

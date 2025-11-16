@@ -46,7 +46,7 @@ fun LoginScreen(
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
-    val imageHeight = screenHeight * 0.35f // 35% of screen heigh
+    val imageHeight = screenHeight * 0.35f // 35% of screen height
 
     val TAG = "LoginScreen"
 
@@ -149,7 +149,7 @@ fun LoginScreen(
                 enabled = !state.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal=30.dp),
+                    .padding(horizontal = 30.dp),
                 colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.Transparent)
             )
 

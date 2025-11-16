@@ -14,29 +14,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.coffeebarmobileapp.ui.theme.*
+import androidx.compose.material.icons.filled.ArrowBack
+import com.example.coffeebarmobileapp.ui.home.MainDestinations
+import com.example.coffeebarmobileapp.ui.theme.Black
+import com.example.coffeebarmobileapp.ui.theme.White
 import androidx.compose.foundation.layout.WindowInsets
-
 
 /**
  * The main Bottom Navigation Bar for the app.
  */
 @Composable
-fun CoffeeShopBottomNavigation(selectedItem: Int, onItemSelected: (Int) -> Unit) {
+fun CoffeeShopBottomNavigation(
+    currentRoute: String?,
+    onItemSelected: (String) -> Unit
+) {
     val items = listOf(
-        "Home" to Icons.Filled.Home,
-        "Menu" to Icons.Filled.Menu,
-        "Cart" to Icons.Filled.ShoppingCart,
-        "Receipts" to Icons.Filled.Receipt,
-        "Profile" to Icons.Filled.Person
+        MainDestinations.HOME to (Icons.Filled.Home to "Home"),
+        MainDestinations.MENU to (Icons.Filled.Menu to "Menu"),
+        MainDestinations.CART to (Icons.Filled.ShoppingCart to "Cart"),
+        MainDestinations.RECEIPTS to (Icons.Filled.Receipt to "Receipts"),
+        MainDestinations.PROFILE to (Icons.Filled.Person to "Profile")
     )
 
     NavigationBar(containerColor = White) {
-        items.forEachIndexed { index, item ->
+        items.forEach { (route, details) ->
+            val (icon, label) = details
             NavigationBarItem(
-                icon = { Icon(item.second, contentDescription = item.first) },
-                label = { Text(item.first) },
-                selected = selectedItem == index,
-                onClick = { onItemSelected(index) },
+                icon = { Icon(icon, contentDescription = label) },
+                label = { Text(label) },
+                selected = currentRoute == route,
+                onClick = { onItemSelected(route) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = CoffeeBrown,
                     selectedTextColor = CoffeeBrown,
@@ -57,7 +64,10 @@ fun CoffeeShopBottomNavigation(selectedItem: Int, onItemSelected: (Int) -> Unit)
 fun CoffeeShopTopAppBar() {
     TopAppBar(
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
                 Text(
                     "Coffee Bar",
                     fontSize = 24.sp,
@@ -89,6 +99,13 @@ fun ProfileTopAppBar() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
+                Text(
+                    "Coffee Bar",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Black
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.Filled.LocalCafe,
                     contentDescription = "Logo",
@@ -96,10 +113,6 @@ fun ProfileTopAppBar() {
                     tint = CoffeeBrown
                 )
             }
-        },
-        actions = {
-            Icon(Icons.Filled.NightsStay, contentDescription = "Dark Mode", modifier = Modifier.padding(end = 8.dp))
-            Icon(Icons.Filled.Notifications, contentDescription = "Notifications", modifier = Modifier.padding(end = 8.dp))
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
     )
@@ -187,11 +200,26 @@ fun MenuTopAppBar(
 @Composable
 fun CartTopAppBar() {
     TopAppBar(
-        title = { Text("Cart", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
-        actions = {
-            Icon(Icons.Filled.NightsStay, contentDescription = "Dark Mode", modifier = Modifier.padding(end = 8.dp))
-            Icon(Icons.Filled.Notifications, contentDescription = "Notifications", modifier = Modifier.padding(end = 8.dp))
-        },
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    "Coffee Bar",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Black
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Filled.LocalCafe,
+                    contentDescription = "Logo",
+                    modifier = Modifier.size(30.dp),
+                    tint = CoffeeBrown
+                )
+            }
+                },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
     )
 }
@@ -203,14 +231,34 @@ fun CartTopAppBar() {
 @Composable
 fun ReceiptsTopAppBar() {
     TopAppBar(
-        title = { Text("Receipts", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
-        actions = {
-            Icon(Icons.Filled.NightsStay, contentDescription = "Dark Mode", modifier = Modifier.padding(end = 8.dp))
-            Icon(Icons.Filled.Notifications, contentDescription = "Notifications", modifier = Modifier.padding(end = 8.dp))
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    "Coffee Bar",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Black
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Filled.LocalCafe,
+                    contentDescription = "Logo",
+                    modifier = Modifier.size(30.dp),
+                    tint = CoffeeBrown
+                )
+            }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
     )
 }
+
+/**
+ * --- ADD THIS NEW FUNCTION ---
+ * The Top App Bar for the Receipt Detail screen.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReceiptDetailTopAppBar(onNavigateBack: () -> Unit) {
