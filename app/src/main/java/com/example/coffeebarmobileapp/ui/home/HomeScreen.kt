@@ -102,7 +102,6 @@ fun HomeScreen(
                 MainDestinations.HOME,
                 MainDestinations.MENU,
                 MainDestinations.CART,
-                MainDestinations.RECEIPT_DETAIL,
                 MainDestinations.RECEIPTS,
                 MainDestinations.PROFILE -> {
                     CoffeeShopBottomNavigation(

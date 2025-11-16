@@ -202,7 +202,7 @@ private fun formatTimestamp(timestamp: String): String {
             timeZone = TimeZone.getTimeZone("UTC") // Assume server sends UTC
         }
         val outputFormat = SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault()).apply {
-            timeZone = TimeZone.getDefault() // Convert to local time
+            timeZone = TimeZone.getTimeZone("EAT") // Convert to local time
         }
         val date = inputFormat.parse(timestamp)
         outputFormat.format(date!!)
