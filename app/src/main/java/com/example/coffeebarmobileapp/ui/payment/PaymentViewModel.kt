@@ -63,7 +63,8 @@ data class Receipt(
     val items: List<ReceiptItem>,
     val subtotal: Double,
     val tax: Double,
-    val totalAmount: Double
+    val totalAmount: Double,
+    val pickupTime: String? = null // Expected pickup time (5 minutes from order creation), nullable for backward compatibility
 )
 
 sealed interface PaymentUiState {

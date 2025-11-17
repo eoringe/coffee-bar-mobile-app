@@ -91,6 +91,12 @@ fun ReceiptDetailScreen(
                                 label = "Payment Time",
                                 value = formatTimestamp(receipt.paymentDate)
                             )
+                            receipt.pickupTime?.let { pickupTime ->
+                                ReceiptDetailRow(
+                                    label = "Pickup Time",
+                                    value = formatTimestamp(pickupTime)
+                                )
+                            }
                             ReceiptDetailRow(
                                 label = "Phone Number",
                                 value = receipt.customerPhoneNumber
@@ -198,14 +204,36 @@ private fun ReceiptTotalRow(label: String, amount: Double, isTotal: Boolean = fa
 
 private fun formatTimestamp(timestamp: String): String {
     return try {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).apply {
-            timeZone = TimeZone.getTimeZone("UTC") // Assume server sends UTC
+        // LocalDateTime.toString() can produce formats like:
+        // "2025-11-17T01:12:33" (no fractional seconds)
+        // "2025-11-17T01:12:33.123" (milliseconds)
+        // "2025-11-17T01:12:33.123456789" (nanoseconds, up to 9 digits)
+        
+        // Split by 'T' to separate date and time
+        val parts = timestamp.split('T')
+        if (parts.size != 2) {
+            return timestamp
         }
-        val outputFormat = SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault()).apply {
-            timeZone = TimeZone.getTimeZone("EAT") // Convert to local time
+        
+        val datePart = parts[0] // "2025-11-17"
+        val timePart = parts[1] // "01:12:33.123456789" or "01:12:33"
+        
+        // Extract just the time without fractional seconds
+        val timeWithoutFraction = timePart.split('.').first() // "01:12:33"
+        
+        // Combine date and time
+        val cleanTimestamp = "$datePart $timeWithoutFraction"
+        
+        // Parse the clean timestamp
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val date = inputFormat.parse(cleanTimestamp)
+        
+        if (date != null) {
+            val outputFormat = SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault())
+            outputFormat.format(date)
+        } else {
+            timestamp
         }
-        val date = inputFormat.parse(timestamp)
-        outputFormat.format(date!!)
     } catch (e: Exception) {
         timestamp // Return original if parsing fails
     }

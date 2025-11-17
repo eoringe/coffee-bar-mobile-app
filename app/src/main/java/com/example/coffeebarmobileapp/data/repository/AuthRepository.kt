@@ -16,6 +16,7 @@ import kotlinx.coroutines.tasks.await
 class AuthRepository {
     private val firebaseAuth = FirebaseAuth.getInstance()
     private val authApi = AuthApi()
+    private val notificationRepository = NotificationRepository()
 
     /**
      * Sign up with email and password
@@ -43,7 +44,14 @@ class AuthRepository {
 
             // Step 4: Verify with backend
             // This will now return a User object that includes the name
-            authApi.verifyUser(token)
+            val userResult = authApi.verifyUser(token)
+            
+            // Step 5: Register device for push notifications (fire and forget)
+            if (userResult.isSuccess) {
+                notificationRepository.registerDeviceToken()
+            }
+            
+            userResult
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -66,7 +74,14 @@ class AuthRepository {
                 ?: return Result.failure(Exception("Failed to get token"))
 
             // Step 3: Verify with backend
-            authApi.verifyUser(token)
+            val userResult = authApi.verifyUser(token)
+            
+            // Step 4: Register device for push notifications (fire and forget)
+            if (userResult.isSuccess) {
+                notificationRepository.registerDeviceToken()
+            }
+            
+            userResult
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -93,7 +108,14 @@ class AuthRepository {
                 ?: return Result.failure(Exception("Failed to get Firebase token after Google Sign-In"))
 
             // Step 4: Verify with your Ktor backend
-            authApi.verifyUser(token)
+            val userResult = authApi.verifyUser(token)
+            
+            // Step 5: Register device for push notifications (fire and forget)
+            if (userResult.isSuccess) {
+                notificationRepository.registerDeviceToken()
+            }
+            
+            userResult
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -125,7 +147,9 @@ class AuthRepository {
     /**
      * Logout user
      */
-    fun logout() {
+    suspend fun logout() {
+        // Unregister device token before logout
+        notificationRepository.unregisterDeviceToken()
         firebaseAuth.signOut()
     }
 

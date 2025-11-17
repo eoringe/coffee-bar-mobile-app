@@ -19,6 +19,7 @@ import com.example.coffeebarmobileapp.ui.home.MainDestinations
 import com.example.coffeebarmobileapp.ui.theme.Black
 import com.example.coffeebarmobileapp.ui.theme.White
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.graphics.Color
 
 /**
  * The main Bottom Navigation Bar for the app.
@@ -61,7 +62,10 @@ fun CoffeeShopBottomNavigation(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoffeeShopTopAppBar() {
+fun CoffeeShopTopAppBar(
+    unreadCount: Int = 0,
+    onNotificationClick: () -> Unit = {}
+) {
     TopAppBar(
         title = {
             Row(
@@ -81,6 +85,29 @@ fun CoffeeShopTopAppBar() {
                     modifier = Modifier.size(30.dp),
                     tint = CoffeeBrown
                 )
+            }
+        },
+        actions = {
+            Box {
+                IconButton(onClick = onNotificationClick) {
+                    Icon(
+                        Icons.Filled.Notifications,
+                        contentDescription = "Notifications",
+                        tint = CoffeeBrown
+                    )
+                }
+                if (unreadCount > 0) {
+                    Badge(
+                        modifier = Modifier.align(Alignment.TopEnd),
+                        containerColor = Color(0xFFE53935)
+                    ) {
+                        Text(
+                            if (unreadCount > 99) "99+" else unreadCount.toString(),
+                            color = White,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = White)

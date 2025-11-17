@@ -1,13 +1,18 @@
 package com.example
 
 import com.example.backend.controllers.DarajaController
+import com.example.backend.controllers.NotificationController
 import com.example.backend.controllers.OrderController
 import com.example.backend.controllers.ReceiptController
 import com.example.backend.controllers.getMenuItems
 import com.example.backend.models.*
 import com.example.backend.services.DarajaService
+import com.example.backend.services.NotificationService
 import com.example.backend.services.OrderService
 import com.example.backend.services.ReceiptService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.example.plugins.FirebaseUser
 import com.example.plugins.configureFirebase
 import com.example.plugins.firebase
@@ -63,7 +68,15 @@ fun Application.module() {
 
     transaction {
         println("✅ Connected to database successfully!")
-        SchemaUtils.createMissingTablesAndColumns(Categories, MenuItems, Orders, OrderItems, Receipts)
+        SchemaUtils.createMissingTablesAndColumns(
+            Categories, 
+            MenuItems, 
+            Orders, 
+            OrderItems, 
+            Receipts,
+            UserDevices,
+            Notifications
+        )
     }
 
     // --- 3. MANUAL INSTANTIATION ---
@@ -75,14 +88,17 @@ fun Application.module() {
         callbackUrl = darajaCallbackUrl
     )
     val receiptService = ReceiptService()
-    val orderService = OrderService(darajaService, receiptService) // <-- Pass the real service
+    val notificationService = NotificationService()
+    val orderService = OrderService(darajaService, receiptService, notificationService) // <-- Pass notification service
 
     val darajaController = DarajaController(darajaService) { checkoutId, success, receipt ->
         println("--- [Application.kt] CALLBACK received via controller lambda ---")
         orderService.updateOrderPaymentStatusByCheckoutId(checkoutId, success, receipt)
+        // Payment confirmation notification is now handled in OrderService
     }
     val orderController = OrderController(orderService)
-    val receiptController = ReceiptController(receiptService) // <-- Manually create
+    val receiptController = ReceiptController(receiptService)
+    val notificationController = NotificationController(notificationService)
 
     // --- 4. PLUGINS ---
     install(ContentNegotiation) {
@@ -109,12 +125,19 @@ fun Application.module() {
         post("/daraja/callback") {
             darajaController.handleCallback(call)
         }
+        
+        // Webhook endpoint for database trigger (unauthenticated)
+        // WARNING: In production, add authentication/authorization (API key, IP whitelist, etc.)
+        post("/notifications/trigger") {
+            notificationController.handleDbTrigger(call)
+        }
 
         // Authenticated routes
         authenticate("firebase-auth") {
             // Orders
             post("/orders") { orderController.createOrder(call) }
             get("/orders/{id}") { orderController.getOrder(call) }
+            put("/orders/{id}/status") { orderController.updateOrderStatus(call) }
 
             // --- THIS IS THE FIX ---
             // The specific path MUST come before the wildcard
@@ -136,6 +159,35 @@ fun Application.module() {
                         "name" to user?.name
                     )
                 )
+            }
+
+            // Notifications
+            post("/notifications/register-device") {
+                notificationController.registerDevice(call)
+            }
+            delete("/notifications/unregister-device") {
+                notificationController.unregisterDevice(call)
+            }
+            get("/notifications") {
+                notificationController.getNotifications(call)
+            }
+            get("/notifications/unread-count") {
+                notificationController.getUnreadCount(call)
+            }
+            get("/notifications/debug/device-tokens") {
+                notificationController.getDeviceTokens(call)
+            }
+            post("/notifications/debug/test") {
+                notificationController.testNotification(call)
+            }
+            put("/notifications/{id}/read") {
+                notificationController.markAsRead(call)
+            }
+            put("/notifications/read-all") {
+                notificationController.markAllAsRead(call)
+            }
+            delete("/notifications/{id}") {
+                notificationController.deleteNotification(call)
             }
         }
     }

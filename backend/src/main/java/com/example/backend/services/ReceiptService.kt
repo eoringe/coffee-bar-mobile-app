@@ -1,18 +1,18 @@
-//package com.example.backend.services
+// package com.example.backend.services
 //
-//import com.example.backend.models.MenuItems
-//import com.example.backend.models.OrderItems
-//import com.example.backend.models.Orders
-//import com.example.backend.models.Receipts
-//import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-//import com.fasterxml.jackson.module.kotlin.readValue
+// import com.example.backend.models.MenuItems
+// import com.example.backend.models.OrderItems
+// import com.example.backend.models.Orders
+// import com.example.backend.models.Receipts
+// import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+// import com.fasterxml.jackson.module.kotlin.readValue
 //// import org.jetbrains.exposed.sql.and // <-- REMOVED (Unused)
-//import org.jetbrains.exposed.sql.insert
-//import org.jetbrains.exposed.sql.select
-//import org.jetbrains.exposed.sql.transactions.transaction
-//import java.time.LocalDateTime
+// import org.jetbrains.exposed.sql.insert
+// import org.jetbrains.exposed.sql.select
+// import org.jetbrains.exposed.sql.transactions.transaction
+// import java.time.LocalDateTime
 //
-//class ReceiptService {
+// class ReceiptService {
 //
 //    private val objectMapper = jacksonObjectMapper()
 //
@@ -100,20 +100,19 @@
 //            receiptDataMap
 //        }
 //    }
-//}
-
+// }
 
 package com.example.backend.services
 
 import com.example.backend.models.*
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import java.time.LocalDateTime
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.time.LocalDateTime
 
 class ReceiptService {
 
@@ -129,32 +128,37 @@ class ReceiptService {
 
         val order = Orders.select { Orders.id eq orderId }.single()
 
-        val orderItems = (OrderItems innerJoin MenuItems)
-            .select { OrderItems.orderId eq orderId }
-            .map {
-                ReceiptItem(
-                    itemName = it[MenuItems.coffeeTitle],
-                    size = it[OrderItems.size],
-                    quantity = it[OrderItems.quantity],
-                    unitPrice = it[OrderItems.unitPrice].toDouble(),
-                    lineTotal = it[OrderItems.lineTotal].toDouble()
-                )
-            }
+        val orderItems =
+                (OrderItems innerJoin MenuItems).select { OrderItems.orderId eq orderId }.map {
+                    ReceiptItem(
+                            itemName = it[MenuItems.coffeeTitle],
+                            size = it[OrderItems.size],
+                            quantity = it[OrderItems.quantity],
+                            unitPrice = it[OrderItems.unitPrice].toDouble(),
+                            lineTotal = it[OrderItems.lineTotal].toDouble()
+                    )
+                }
 
         val totalAmount = order[Orders.totalAmount].toDouble()
         val subtotal = totalAmount
 
-        val receipt = Receipt(
-            receiptNumber = "RCPT-${orderId.toString().padStart(6, '0')}",
-            orderId = orderId,
-            paymentDate = order[Orders.createdAt].toString(),
-            mpesaReceiptNumber = order[Orders.mpesaReceiptNumber],
-            customerPhoneNumber = order[Orders.phoneNumber], // <-- This is now resolved
-            items = orderItems,
-            subtotal = subtotal,
-            tax = 0.0,
-            totalAmount = totalAmount
-        )
+        // Calculate pickup time: 5 minutes from order creation
+        val orderCreatedAt = order[Orders.createdAt]
+        val pickupTime = orderCreatedAt.plusMinutes(5)
+
+        val receipt =
+                Receipt(
+                        receiptNumber = "RCPT-${orderId.toString().padStart(6, '0')}",
+                        orderId = orderId,
+                        paymentDate = orderCreatedAt.toString(),
+                        mpesaReceiptNumber = order[Orders.mpesaReceiptNumber],
+                        customerPhoneNumber = order[Orders.phoneNumber], // <-- This is now resolved
+                        items = orderItems,
+                        subtotal = subtotal,
+                        tax = 0.0,
+                        totalAmount = totalAmount,
+                        pickupTime = pickupTime.toString()
+                )
 
         val receiptDataJson = objectMapper.writeValueAsString(receipt)
 
@@ -171,25 +175,59 @@ class ReceiptService {
 
     fun getReceiptByOrderId(orderId: Int): Receipt? {
         return transaction {
-            val receiptRow = Receipts.select { Receipts.orderId eq orderId }.singleOrNull()
-                ?: return@transaction null
+            val receiptRow =
+                    Receipts.select { Receipts.orderId eq orderId }.singleOrNull()
+                            ?: return@transaction null
             val receiptDataJson = receiptRow[Receipts.receiptData]
-            objectMapper.readValue<Receipt>(receiptDataJson)
+            val receipt = objectMapper.readValue<Receipt>(receiptDataJson)
+            // Calculate pickupTime for old receipts that don't have it
+            if (receipt.pickupTime == null) {
+                try {
+                    // Parse LocalDateTime, handling formats with or without microseconds
+                    val paymentDateStr =
+                            receipt.paymentDate.split('.').first() // Remove microseconds
+                    val paymentDate = java.time.LocalDateTime.parse(paymentDateStr)
+                    val pickupTime = paymentDate.plusMinutes(5)
+                    receipt.copy(pickupTime = pickupTime.toString())
+                } catch (e: Exception) {
+                    // If parsing fails, return receipt without pickupTime
+                    receipt
+                }
+            } else {
+                receipt
+            }
         }
     }
 
-    /**
-     * Fetches all receipts for a given user.
-     */
+    /** Fetches all receipts for a given user. */
     fun getReceiptsByUser(userUid: String): List<Receipt> {
         return transaction {
             (Receipts innerJoin Orders)
-                .select { Orders.userUid eq userUid }
-                .orderBy(Receipts.createdAt, SortOrder.DESC)
-                .map { receiptRow ->
-                    val receiptDataJson = receiptRow[Receipts.receiptData]
-                    objectMapper.readValue<Receipt>(receiptDataJson)
-                }
+                    .select { Orders.userUid eq userUid }
+                    .orderBy(Receipts.createdAt, SortOrder.DESC)
+                    .map { receiptRow ->
+                        val receiptDataJson = receiptRow[Receipts.receiptData]
+                        val receipt = objectMapper.readValue<Receipt>(receiptDataJson)
+                        // Calculate pickupTime for old receipts that don't have it
+                        if (receipt.pickupTime == null) {
+                            try {
+                                // Parse LocalDateTime, handling formats with or without
+                                // microseconds
+                                val paymentDateStr =
+                                        receipt.paymentDate
+                                                .split('.')
+                                                .first() // Remove microseconds
+                                val paymentDate = java.time.LocalDateTime.parse(paymentDateStr)
+                                val pickupTime = paymentDate.plusMinutes(5)
+                                receipt.copy(pickupTime = pickupTime.toString())
+                            } catch (e: Exception) {
+                                // If parsing fails, return receipt without pickupTime
+                                receipt
+                            }
+                        } else {
+                            receipt
+                        }
+                    }
         }
     }
 }

@@ -80,11 +80,28 @@ fun HomeScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    
+    // Notification ViewModel for unread count
+    val notificationViewModel: com.example.coffeebarmobileapp.ui.notifications.NotificationViewModel = viewModel()
+    val unreadCount by notificationViewModel.unreadCount.collectAsState()
+    
+    // Refresh notifications when screen is visible and when route changes
+    LaunchedEffect(currentRoute) {
+        notificationViewModel.fetchUnreadCount()
+        if (currentRoute == MainDestinations.NOTIFICATIONS) {
+            notificationViewModel.fetchNotifications()
+        }
+    }
 
     Scaffold(
         topBar = {
             when (currentRoute) {
-                MainDestinations.HOME -> CoffeeShopTopAppBar()
+                MainDestinations.HOME -> CoffeeShopTopAppBar(
+                    unreadCount = unreadCount,
+                    onNotificationClick = {
+                        navController.navigate(MainDestinations.NOTIFICATIONS)
+                    }
+                )
 //                MainDestinations.MENU -> MenuTopAppBar()
                 MainDestinations.CART -> CartTopAppBar()
                 MainDestinations.RECEIPTS -> ReceiptsTopAppBar()
@@ -94,6 +111,9 @@ fun HomeScreen(
                     )
                 }
                 MainDestinations.PROFILE -> ProfileTopAppBar()
+                MainDestinations.NOTIFICATIONS -> {
+                    // Notifications screen has its own top bar
+                }
                 else -> {}
             }
         },
@@ -103,7 +123,8 @@ fun HomeScreen(
                 MainDestinations.MENU,
                 MainDestinations.CART,
                 MainDestinations.RECEIPTS,
-                MainDestinations.PROFILE -> {
+                MainDestinations.PROFILE,
+                MainDestinations.NOTIFICATIONS -> {
                     CoffeeShopBottomNavigation(
                         currentRoute = currentRoute,
                         onItemSelected = { route ->
@@ -222,6 +243,18 @@ fun MainNavGraph(
             )
         }
 
+        // Notifications Screen
+        composable(MainDestinations.NOTIFICATIONS) {
+            com.example.coffeebarmobileapp.ui.notifications.NotificationsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToReceipt = { orderId ->
+                    navController.navigate("${MainDestinations.RECEIPT_DETAIL_ROUTE}/$orderId") {
+                        popUpTo(MainDestinations.NOTIFICATIONS) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         // --- New Payment Flow Screens ---
         composable(MainDestinations.PAYMENT) {
             PaymentScreen(
@@ -287,6 +320,7 @@ fun MainNavGraph(
 
 // --- ROUTES OBJECT FOR THE MAIN APP ---
 object MainDestinations {
+    const val NOTIFICATIONS = "notifications"
     const val HOME = "home"
     const val MENU = "menu"
     const val CART = "cart"
@@ -376,7 +410,7 @@ private fun TodaySpecialSection(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            "Today’s Special",
+            "Today’s Specials",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Black

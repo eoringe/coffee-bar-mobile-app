@@ -13,13 +13,11 @@ import io.ktor.server.response.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import javax.swing.SortOrder
+import org.jetbrains.exposed.sql.SortOrder
 
 class ReceiptController(private val receiptService: ReceiptService) {
 
     suspend fun getReceiptForOrder(call: ApplicationCall) {
-        // In a real app, you'd check if the authenticated user owns this order
-
         val orderId = call.parameters["id"]?.toIntOrNull()
         if (orderId == null) {
             call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid order id"))
@@ -28,16 +26,32 @@ class ReceiptController(private val receiptService: ReceiptService) {
 
         println("--- [ReceiptController] Fetching receipt for order $orderId ---")
 
-        val receipt = receiptService.getReceiptByOrderId(orderId)
-        if (receipt == null) {
-            call.respond(HttpStatusCode.NotFound, mapOf("error" to "Receipt not found or not yet generated"))
-            return
-        }
+        try {
+            val receipt = receiptService.getReceiptByOrderId(orderId)
+            if (receipt == null) {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Receipt not found or not yet generated"))
+                return
+            }
 
-        call.respond(HttpStatusCode.OK, receipt)
+            // Manually serialize using Jackson to ensure proper JSON response
+            call.respondText(
+                contentType = ContentType.Application.Json,
+                status = HttpStatusCode.OK
+            ) {
+                objectMapper.writeValueAsString(receipt)
+            }
+        } catch (e: Exception) {
+            println("--- [ReceiptController] Error fetching receipt: ${e.message} ---")
+            e.printStackTrace()
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                mapOf("error" to "Failed to fetch receipt: ${e.message}")
+            )
+        }
     }
 
     private val objectMapper = jacksonObjectMapper()
+    
     suspend fun getAllReceiptsForUser(call: ApplicationCall) {
         val principal = call.principal<FirebaseUser>()
         val userUid = principal?.uid ?: return call.respond(
@@ -47,8 +61,24 @@ class ReceiptController(private val receiptService: ReceiptService) {
 
         println("--- [ReceiptController] Fetching all receipts for user $userUid ---")
 
-        // 5. This correctly calls the service, which does the database work
-        val receipts = receiptService.getReceiptsByUser(userUid)
-        call.respond(HttpStatusCode.OK, receipts)
+        try {
+            val receipts = receiptService.getReceiptsByUser(userUid)
+            println("--- [ReceiptController] Found ${receipts.size} receipts for user $userUid ---")
+            
+            // Manually serialize using Jackson to ensure proper JSON response
+            call.respondText(
+                contentType = ContentType.Application.Json,
+                status = HttpStatusCode.OK
+            ) {
+                objectMapper.writeValueAsString(receipts)
+            }
+        } catch (e: Exception) {
+            println("--- [ReceiptController] Error fetching receipts: ${e.message} ---")
+            e.printStackTrace()
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                mapOf("error" to "Failed to fetch receipts: ${e.message}")
+            )
+        }
     }
 }

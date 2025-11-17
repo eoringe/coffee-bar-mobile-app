@@ -144,4 +144,50 @@ class OrderController(private val orderService: OrderService) {
         }
         call.respond(order)
     }
+
+    /**
+     * Update order status (for admin/barista)
+     * PUT /orders/{id}/status
+     */
+    suspend fun updateOrderStatus(call: ApplicationCall) {
+        val user = call.principal<FirebaseUser>()
+        if (user?.uid == null) {
+            call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Unauthorized"))
+            return
+        }
+
+        val orderId = call.parameters["id"]?.toIntOrNull()
+        if (orderId == null) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid order id"))
+            return
+        }
+
+        val request = try {
+            call.receive<UpdateOrderStatusRequest>()
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid request body. Expected: {\"status\": \"PREPARING\"}"))
+            return
+        }
+
+        try {
+            val success = orderService.updateOrderStatus(orderId, request.status)
+            if (success) {
+                call.respond(HttpStatusCode.OK, mapOf("message" to "Order status updated successfully", "orderId" to orderId, "status" to request.status))
+            } else {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Order not found"))
+            }
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
+        } catch (e: Exception) {
+            println("❌ [OrderController] Error updating order status: ${e.message}")
+            call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "Unknown error")))
+        }
+    }
 }
+
+/**
+ * Request DTO for updating order status
+ */
+data class UpdateOrderStatusRequest(
+    val status: String // "PAID", "PREPARING", "READY", "COMPLETED", "CANCELLED", "FAILED"
+)

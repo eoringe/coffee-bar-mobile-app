@@ -231,27 +231,31 @@ class OrderService(
     /**
      * This function is now called by BOTH the polling loop AND the callback handler. It's safe to
      * call multiple times.
+     * Returns the orderId if successful, null otherwise
      */
     fun updateOrderPaymentStatusByCheckoutId(
             checkoutRequestId: String,
             success: Boolean,
             mpesaReceiptNumber: String?
-    ) {
-        transaction {
+    ): Int? {
+        return transaction {
             val order =
                     Orders.select { Orders.checkoutRequestId eq checkoutRequestId }.singleOrNull()
                             ?: run {
                                 println(
                                         "❌ [OrderService] Callback/Poll for $checkoutRequestId: Order not found!"
                                 )
-                                return@transaction
+                                return@transaction null
                             }
+
+            val orderId = order[Orders.id]
+            val userUid = order[Orders.userUid]
 
             // Only update if it's still pending (prevents race conditions)
             if (order[Orders.status] == "PENDING_PAYMENT") {
                 val newStatus = if (success) "PAID" else "FAILED"
-                println("✅ [OrderService] Updating order ${order[Orders.id]} to $newStatus")
-                Orders.update({ Orders.id eq order[Orders.id] }) { r ->
+                println("✅ [OrderService] Updating order $orderId to $newStatus")
+                Orders.update({ Orders.id eq orderId }) { r ->
                     r[Orders.status] = newStatus
                     if (mpesaReceiptNumber != null) {
                         r[Orders.mpesaReceiptNumber] = mpesaReceiptNumber
@@ -264,19 +268,27 @@ class OrderService(
                     // --- THIS IS THE FIX ---
                     // Try to generate the receipt
                     try {
-                        receiptService?.generateReceiptForOrder(order[Orders.id])
-                        println("✅ [OrderService] Receipt generation initiated for order ${order[Orders.id]}")
+                        receiptService?.generateReceiptForOrder(orderId)
+                        println("✅ [OrderService] Receipt generation initiated for order $orderId")
                     } catch (e: Exception) {
-                        println("❌ CRITICAL: Failed to generate receipt for order ${order[Orders.id]}: ${e.message}")
+                        println("❌ CRITICAL: Failed to generate receipt for order $orderId: ${e.message}")
                     }
                     // -----------------------
 
-                    reducePortionsForOrder(order[Orders.id])
+                    reducePortionsForOrder(orderId)
+                    
+                    // Notifications disabled
                 }
+                
+                orderId
             } else {
                 println(
-                    "ℹ️ [OrderService] Order ${order[Orders.id]} already processed. Ignoring duplicate update."
+                    "ℹ️ [OrderService] Order $orderId already processed. Ignoring duplicate update."
                 )
+                
+                // Notifications disabled
+                
+                orderId
             }
         }
     }
@@ -347,20 +359,9 @@ class OrderService(
                     Pair(userUid, oldStatus)
                 }
 
-        if (userUid == null) {
-            return false
-        }
-
-        // Send notification if order is ready
-        if (newStatus == "READY" && oldStatus != "READY") {
-            notificationService?.let { service ->
-                // Launch notification in background (fire and forget)
-                CoroutineScope(Dispatchers.Default).launch {
-                    service.sendOrderReadyNotification(userUid, orderId)
-                }
-            }
-        }
-
+        // Order status notifications removed - using timer-based system instead
+        // Notifications are now sent automatically 5 minutes after order creation
+        
         return true
     }
 
