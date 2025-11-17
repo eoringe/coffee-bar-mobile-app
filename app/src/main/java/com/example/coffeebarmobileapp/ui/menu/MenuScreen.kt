@@ -15,6 +15,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +37,10 @@ import com.example.coffeebarmobileapp.R
 import com.example.coffeebarmobileapp.ui.components.MenuTopAppBar
 import com.example.coffeebarmobileapp.ui.cart.CartViewModel
 import com.example.coffeebarmobileapp.ui.home.MenuItemUiModel
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import kotlin.math.max
+import kotlin.math.min
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +86,56 @@ fun MenuScreen(
 
     val pullRefreshState = rememberPullToRefreshState()
 
+    // Collapsible header state
+    val maxHeaderHeight = 300f
+    val minHeaderHeight = 0f
+    var headerHeightTarget by remember { mutableFloatStateOf(maxHeaderHeight) }
+
+    // Animated header height with smooth transition
+    val headerHeight by animateFloatAsState(
+        targetValue = headerHeightTarget,
+        animationSpec = tween(durationMillis = 300),
+        label = "headerHeight"
+    )
+
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+
+                // Only consume scroll when scrolling up (collapsing) and header is visible
+                if (delta < 0 && headerHeightTarget > minHeaderHeight) {
+                    val newHeight = headerHeightTarget + delta
+                    val previousHeight = headerHeightTarget
+                    headerHeightTarget = newHeight.coerceIn(minHeaderHeight, maxHeaderHeight)
+                    val consumed = headerHeightTarget - previousHeight
+                    return Offset(0f, consumed)
+                }
+
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                val delta = available.y
+
+                // Only expand header when scrolling down AND we've reached the top of the list
+                if (delta > 0 && headerHeightTarget < maxHeaderHeight) {
+                    val newHeight = headerHeightTarget + delta
+                    val previousHeight = headerHeightTarget
+                    headerHeightTarget = newHeight.coerceIn(minHeaderHeight, maxHeaderHeight)
+                    val consumed = headerHeightTarget - previousHeight
+                    return Offset(0f, consumed)
+                }
+
+                return Offset.Zero
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -95,31 +153,35 @@ fun MenuScreen(
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.fetchMenuItems() },
             state = pullRefreshState,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // image to collapse
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                        .clip(RoundedCornerShape(bottomStart = 50.dp, bottomEnd = 50.dp))
-                        .background(LightBrown.copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    AsyncImage(
-                        model = categoryImages[selectedCategory],
-                        contentDescription = selectedCategory,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                // Collapsible image
+                if (headerHeight > 0) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(headerHeight.dp)
+                            .clip(RoundedCornerShape(bottomStart = 50.dp, bottomEnd = 50.dp))
+                            .background(LightBrown.copy(alpha = 0.5f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = categoryImages[selectedCategory],
+                            contentDescription = selectedCategory,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(10.dp))
 
-//                categories
+                // categories
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -152,31 +214,39 @@ fun MenuScreen(
 
                 Spacer(Modifier.height(10.dp))
 
-                //scrollable menu items
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .border(
-                            width = 1.dp,
-                            color = CoffeeBrown,
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                        .background(LightBrown.copy(alpha = 0.3f))
-                ) {
-                    when (menuState) {
-                        is MenuState.Loading -> {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(color = CoffeeBrown)
-                            }
+                // scrollable menu items
+                when (menuState) {
+                    is MenuState.Loading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .border(
+                                    width = 1.dp,
+                                    color = CoffeeBrown,
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                                .background(LightBrown.copy(alpha = 0.3f))
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = CoffeeBrown)
                         }
-                        is MenuState.Error -> {
+                    }
+                    is MenuState.Error -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .border(
+                                    width = 1.dp,
+                                    color = CoffeeBrown,
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                                .background(LightBrown.copy(alpha = 0.3f))
+                        ) {
                             Text(
                                 text = "Error: ${(menuState as MenuState.Error).message}",
                                 style = MaterialTheme.typography.bodyLarge,
@@ -187,45 +257,53 @@ fun MenuScreen(
                                 textAlign = TextAlign.Center
                             )
                         }
-                        is MenuState.Success -> {
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp)
-                            ) {
-                                if (displayItems.isEmpty()) {
-                                    item {
-                                        Text(
-                                            text = "No items in this category yet.",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = TextGrey,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 32.dp),
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-                                } else {
-                                    items(displayItems) { item ->
-                                        MenuItemCard(
-                                            itemName = item.name,
-                                            price = item.singlePrice,
-                                            imageUrl = item.imageUrl,
-                                            onAddToCartClick = {
-                                                val menuItemUiModel = MenuItemUiModel(
-                                                    id = item.id,
-                                                    name = item.name,
-                                                    singlePrice = item.singlePrice.toDouble(),
-                                                    doublePrice = item.doublePrice.toDouble(),
-                                                    fullImageUrl = item.imageUrl,
-                                                    categoryName = item.category
-                                                )
-                                                cartViewModel.addToCart(menuItemUiModel, "single")
-                                                showSnackbar("Added ${item.name} to cart")
-                                            }
-                                        )
-                                        Spacer(Modifier.height(10.dp))
-                                    }
+                    }
+                    is MenuState.Success -> {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .border(
+                                    width = 1.dp,
+                                    color = CoffeeBrown,
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                                .background(LightBrown.copy(alpha = 0.3f))
+                                .padding(16.dp)
+                        ) {
+                            if (displayItems.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "No items in this category yet.",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = TextGrey,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 32.dp),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            } else {
+                                items(displayItems) { item ->
+                                    MenuItemCard(
+                                        itemName = item.name,
+                                        price = item.singlePrice,
+                                        imageUrl = item.imageUrl,
+                                        onAddToCartClick = {
+                                            val menuItemUiModel = MenuItemUiModel(
+                                                id = item.id,
+                                                name = item.name,
+                                                singlePrice = item.singlePrice.toDouble(),
+                                                doublePrice = item.doublePrice.toDouble(),
+                                                fullImageUrl = item.imageUrl,
+                                                categoryName = item.category
+                                            )
+                                            cartViewModel.addToCart(menuItemUiModel, "single")
+                                            showSnackbar("Added ${item.name} to cart")
+                                        }
+                                    )
+                                    Spacer(Modifier.height(10.dp))
                                 }
                             }
                         }
